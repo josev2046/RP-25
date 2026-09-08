@@ -4,7 +4,7 @@
     Created & Developed by Jose Velazquez MA
     Voltage & Wave (https://voltageandwave.co.uk/)
     -- Patched: fixed key/knob pointer-state collision, added sine wave,
-       fine-tune (cents) control, and master volume control --
+       fine-tune (cents) control, master volume control, and oscilloscope --
 -->
 <html lang="en">
 <head>
@@ -26,9 +26,9 @@
         .rack-bolt { width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #a39c8e 0%, #3a362f 80%); border: 1px solid #1a1815; box-shadow: inset 0 1px 1px rgba(255,255,255,0.6), 0 2px 4px rgba(0,0,0,0.3); position: absolute; }
         .bolt-tl { top: 12px; left: 12px; } .bolt-tr { top: 12px; right: 12px; } .bolt-bl { bottom: 12px; left: 12px; } .bolt-br { bottom: 12px; right: 12px; }
 
-        .crt-screen { background: #041004; border: 4px solid #2a2722; border-radius: 8px; box-shadow: inset 0 0 20px rgba(0, 255, 0, 0.25), inset 0 0 12px #000, 0 3px 6px rgba(0,0,0,0.4); position: relative; overflow: hidden; box-sizing: border-box; width: 100%; max-width: 320px; height: 92px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; }
+        .crt-screen { background: #041004; border: 4px solid #2a2722; border-radius: 8px; box-shadow: inset 0 0 20px rgba(0, 255, 0, 0.25), inset 0 0 12px #000, 0 3px 6px rgba(0,0,0,0.4); position: relative; overflow: hidden; box-sizing: border-box; width: 100%; max-width: 320px; height: 92px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; margin-bottom: 1rem; }
         .crt-screen::before { content: " "; position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03)); z-index: 5; background-size: 100% 3px, 6px 100%; pointer-events: none; }
-        .crt-text { color: #0f0; font-family: monospace; font-size: 16px; font-weight: bold; text-shadow: 0 0 5px #0f0; z-index: 10; text-align: center; line-height: 1.4; }
+        .crt-text { color: #0f0; font-family: monospace; font-size: 14px; font-weight: bold; text-shadow: 0 0 5px #0f0; z-index: 10; text-align: right; line-height: 1.3; }
 
         .tactile-button { background: linear-gradient(180deg, #33363d 0%, #191a1e 100%); border: 2px solid #000; color: #f0ebd8; box-shadow: 0 2px 0 #000, 0 3px 5px rgba(0,0,0,0.3); transition: all 0.08s ease; cursor: pointer; outline: none; }
         .tactile-button:active { transform: translateY(1px); box-shadow: 0 1px 0 #000; }
@@ -70,9 +70,13 @@
             </div>
 
             <div class="panel-outline w-full">
-                <!-- DISPLAY -->
+                <!-- DISPLAY W/ SCOPE -->
                 <div class="crt-screen">
-                    <div class="crt-text">
+                    <div class="flex-shrink-0 flex items-center justify-center z-10">
+                        <canvas id="scopeCanvas" width="130" height="50" class="border border-[#111] rounded-sm bg-[#041004]/50"></canvas>
+                    </div>
+                    <div class="border-l border-[#0f0]/30 h-[60px] mx-3 z-10"></div>
+                    <div class="crt-text flex-1 flex flex-col justify-center">
                         <div id="dispNote">NOTE: --</div>
                         <div id="dispFreq" class="text-[12px] opacity-80 mt-1">FREQ: 0.00 Hz</div>
                         <div id="dispFine" class="text-[10px] opacity-70 mt-1">FINE: +0&cent;</div>
@@ -130,12 +134,12 @@
         const startAngle = -135; 
 
         // Audio & State
-        let audioCtx, osc, vcf, vca, masterGain;
+        let audioCtx, osc, vcf, vca, masterGain, analyser;
         let currentNoteIndex = -1;
         let isHold = false;
         let waveType = 'sawtooth'; // 'sawtooth' -> 'triangle' -> 'sine' -> ...
         let octaveOffset = 0; // 0 = C2 base
-        let fineCents = 0; // -50..+50 cents fine tune, applied on top of the selected note
+        let fineCents = 0; // -50..+50 cents fine tune
         let masterVolume = 0.5;
 
         const radialContainer = document.getElementById('radialContainer');
@@ -171,10 +175,6 @@
             keyEl.dataset.index = i;
             keyEl.style.transform = `translate(${x}px, ${y}px) rotate(${angleDeg}deg)`;
             
-            // Direct key interaction: fully independent of the knob's drag state,
-            // so a finger drifting on tap can never be misread as a knob sweep
-            // (previously this borrowed the knob's activeDrag/startY globals,
-            // which could snap the note to the wrong pitch on touch devices).
             keyEl.addEventListener('pointerdown', async (e) => {
                 e.stopPropagation();
                 await initAudio();
@@ -202,7 +202,7 @@
                 keyEl.innerText = `${noteChar}${octave}`;
             });
         }
-        updateKeyLabels(); // Initial population
+        updateKeyLabels(); 
 
         async function initAudio() {
             if (!audioCtx) {
@@ -211,21 +211,62 @@
                 vcf = audioCtx.createBiquadFilter();
                 vca = audioCtx.createGain();
                 masterGain = audioCtx.createGain();
+                analyser = audioCtx.createAnalyser();
                 
                 osc.type = waveType;
                 vcf.type = 'lowpass';
                 vcf.Q.value = 1.5;
                 vca.gain.value = 0.0001;
                 masterGain.gain.value = masterVolume;
+                analyser.fftSize = 512;
                 
                 osc.connect(vcf);
                 vcf.connect(vca);
                 vca.connect(masterGain);
-                masterGain.connect(audioCtx.destination);
+                masterGain.connect(analyser); // scope reads after master volume
+                analyser.connect(audioCtx.destination);
                 
                 osc.start();
+                drawScope(); // Start Oscilloscope loop
             }
             if (audioCtx.state === 'suspended') await audioCtx.resume();
+        }
+
+        function drawScope() {
+            requestAnimationFrame(drawScope);
+            if (!analyser) return;
+
+            const canvas = document.getElementById('scopeCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            analyser.getByteTimeDomainData(dataArray);
+
+            ctx.fillStyle = '#041004';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = '#0f0';
+            ctx.beginPath();
+
+            const sliceWidth = canvas.width * 1.0 / bufferLength;
+            let x = 0;
+
+            for (let i = 0; i < bufferLength; i++) {
+                const v = dataArray[i] / 128.0;
+                const y = v * canvas.height / 2;
+
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+                x += sliceWidth;
+            }
+            ctx.lineTo(canvas.width, canvas.height / 2);
+            ctx.stroke();
         }
 
         function triggerNote(noteIndex) {
@@ -234,19 +275,16 @@
             
             // Calculate actual pitch including octave shift and fine-tune cents
             const totalSemitones = noteIndex + (octaveOffset * 12);
-            const freq = 65.41 * Math.pow(2, totalSemitones / 12) * Math.pow(2, fineCents / 1200); // Base C2
+            const freq = 65.41 * Math.pow(2, totalSemitones / 12) * Math.pow(2, fineCents / 1200); 
 
             osc.frequency.setTargetAtTime(freq, now, 0.01);
             
-            // Filter Envelope: brighter for Saw/Tri (harmonics help you hear beating),
-            // fully open for Sine so the pure fundamental isn't dulled
             const filterByWave = { sawtooth: 4000, triangle: 8000, sine: 20000 };
             const targetFilter = filterByWave[waveType] ?? 4000;
             vcf.frequency.cancelScheduledValues(now);
             vcf.frequency.setValueAtTime(vcf.frequency.value || 400, now);
             vcf.frequency.linearRampToValueAtTime(targetFilter, now + 0.02);
 
-            // Amp Envelope
             vca.gain.cancelScheduledValues(now);
             vca.gain.setValueAtTime(vca.gain.value || 0.0001, now);
             vca.gain.linearRampToValueAtTime(0.5, now + 0.02);
@@ -264,7 +302,6 @@
         }
 
         function releaseNote() {
-            // If HOLD is active, skip the release envelope entirely (drone mode)
             if (isHold || !audioCtx || !vca) return;
             
             const now = audioCtx.currentTime;
@@ -289,11 +326,10 @@
             if (isHold) {
                 btnHold.classList.add('active-toggle');
                 btnHold.innerText = 'HOLD: ON';
-                // If a note is already playing, it will now sustain
             } else {
                 btnHold.classList.remove('active-toggle');
                 btnHold.innerText = 'HOLD: OFF';
-                if (!activeDrag) releaseNote(); // Kill drone if we aren't currently dragging
+                if (!activeDrag) releaseNote();
             }
         });
 
@@ -304,20 +340,17 @@
             waveType = waveCycle[nextIdx];
             btnWave.innerText = `WAVE: ${waveLabels[waveType]}`;
             if (osc) osc.type = waveType;
-            if (currentNoteIndex !== -1) triggerNote(currentNoteIndex); // refresh filter
+            if (currentNoteIndex !== -1) triggerNote(currentNoteIndex); 
         });
 
         function changeOctave(dir) {
             octaveOffset += dir;
-            // Limit octave shift -2 to +3
             octaveOffset = Math.max(-2, Math.min(3, octaveOffset)); 
             
             dispOct.innerText = `OCT ${octaveOffset > 0 ? '+' : ''}${octaveOffset}`;
             updateKeyLabels();
             
-            if (currentNoteIndex !== -1 && isHold) {
-                triggerNote(currentNoteIndex); // Instantly jump pitch if droning
-            }
+            if (currentNoteIndex !== -1 && isHold) triggerNote(currentNoteIndex); 
         }
 
         btnOctDown.addEventListener('click', () => changeOctave(-1));
@@ -326,12 +359,12 @@
         function changeFine(deltaCents) {
             fineCents = Math.max(-50, Math.min(50, fineCents + deltaCents));
             dispFine.innerHTML = `FINE: ${fineCents > 0 ? '+' : ''}${fineCents}&cent;`;
-            if (currentNoteIndex !== -1) triggerNote(currentNoteIndex); // live re-pitch while droning/held
+            if (currentNoteIndex !== -1) triggerNote(currentNoteIndex); 
         }
 
         btnFineDown.addEventListener('click', () => changeFine(-1));
         btnFineUp.addEventListener('click', () => changeFine(1));
-        // Long-press style fine adjust: hold the button to sweep faster
+        
         let fineHoldTimer = null;
         function bindFineHold(btn, deltaCents) {
             btn.addEventListener('pointerdown', () => {
