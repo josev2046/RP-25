@@ -4,6 +4,9 @@
     Created & Developed by Jose Velazquez MA
     Voltage & Wave (https://voltageandwave.co.uk/)
     -- Patched: Added Ambient FX, Foley Macros, and Hidden Easter Egg Auto-Players --
+    -- Bugfix pass: macro run-ID system to stop easter-egg songs / FX macros from
+       contaminating each other when triggered mid-playback; interrupted macros now
+       also reset Hold/Delay/Reverb state cleanly. --
 -->
 <html lang="en">
 <head>
@@ -151,6 +154,12 @@
         let isReverbActive = false;
         let isMacroRunning = false;
 
+        // Bugfix: every macro (song easter-eggs, laser, riser) now checks its own
+        // generation number against this counter. Starting a new macro bumps the
+        // counter, which invalidates every pending timeout/rAF callback from any
+        // previous macro instantly -- no more cross-contaminated notes.
+        let macroRunId = 0;
+
         let currentVoltage = -5.0;
 
         const radialContainer = document.getElementById('radialContainer');
@@ -176,6 +185,20 @@
         const btnRiser = document.getElementById('btnRiser');
 
         const allKeys = [];
+
+        // Bugfix: central "stop whatever macro is running" helper. Bumps the run
+        // id (so any in-flight callbacks bail out) AND, if a macro was actually
+        // running, cleanly resets Hold/Delay/Reverb instead of leaving them
+        // stuck on from the interrupted macro.
+        function interruptMacro() {
+            macroRunId++;
+            if (isMacroRunning) {
+                isMacroRunning = false;
+                toggleHold(false);
+                toggleDelay(false);
+                toggleReverb(false);
+            }
+        }
 
         // Generate 121 markers (-5V to +5V)
         for (let i = 0; i <= totalSemitones; i++) {
@@ -208,7 +231,7 @@
             
             keyEl.addEventListener('pointerdown', async (e) => {
                 e.stopPropagation();
-                if(isMacroRunning) { isMacroRunning = false; } 
+                interruptMacro();
                 await initAudio();
                 try { keyEl.setPointerCapture(e.pointerId); } catch (err) {}
                 
@@ -424,7 +447,7 @@
             if (osc) osc.type = waveType;
         }
         btnWave.addEventListener('click', () => {
-            if(isMacroRunning) { isMacroRunning = false; }
+            interruptMacro();
             const nextIdx = (waveCycle.indexOf(waveType) + 1) % waveCycle.length;
             waveType = waveCycle[nextIdx];
             updateWaveUI();
@@ -492,7 +515,7 @@
         let startY = 0;
 
         mainKnob.addEventListener('pointerdown', async (e) => {
-            if(isMacroRunning) { isMacroRunning = false; } 
+            interruptMacro();
             await initAudio();
             activeDrag = true;
             mainKnob.setPointerCapture(e.pointerId);
@@ -527,10 +550,21 @@
 
         // --- Unified Macro Player Engine ---
         function playMelodyMacro(wave, melodyData) {
-            isMacroRunning = false; 
+            // Bugfix: capture this invocation's own id. Every deferred callback
+            // below checks it against the live macroRunId before doing anything,
+            // so a newer macro (or a manual key/knob interrupt) instantly and
+            // completely silences this one -- no leftover notes.
+            const myRunId = ++macroRunId;
+            if (isMacroRunning) {
+                isMacroRunning = false;
+                toggleHold(false);
+                toggleDelay(false);
+                toggleReverb(false);
+            }
             releaseEnvelope(true); 
             
             setTimeout(async () => {
+                if (myRunId !== macroRunId) return; // superseded before we even started
                 await initAudio();
                 isMacroRunning = true;
                 waveType = wave; updateWaveUI();
@@ -539,7 +573,7 @@
 
                 let i = 0;
                 function playNext() {
-                    if (!isMacroRunning) return; 
+                    if (myRunId !== macroRunId) return; // superseded mid-song
                     if (i >= melodyData.length) {
                         toggleHold(false);
                         isMacroRunning = false;
@@ -553,7 +587,7 @@
                         
                         const releaseTime = note.dur > 150 ? note.dur - 50 : note.dur - 10;
                         setTimeout(() => {
-                            if (isMacroRunning) releaseEnvelope(true);
+                            if (myRunId === macroRunId) releaseEnvelope(true);
                         }, releaseTime);
                     } else {
                         releaseEnvelope(true);
@@ -569,6 +603,7 @@
 
         // --- Foley Macros ---
         btnTheremin.addEventListener('click', async () => {
+            macroRunId++; // cancels any running song/laser/riser macro
             await initAudio();
             isMacroRunning = false; 
             waveType = 'sine'; updateWaveUI();
@@ -579,6 +614,7 @@
         });
 
         btnLaser.addEventListener('click', async () => {
+            const myRunId = ++macroRunId; // cancels any other running macro
             await initAudio();
             isMacroRunning = true;
             waveType = 'sawtooth'; updateWaveUI();
@@ -589,7 +625,7 @@
             triggerEnvelope();
             
             function dropStep() {
-                if(!isMacroRunning) return; 
+                if(myRunId !== macroRunId) return; 
                 v -= 0.3; 
                 if(v <= -5.0) {
                     v = -5.0; updateKnobPosition(v, 0.05);
@@ -602,6 +638,7 @@
         });
 
         btnRiser.addEventListener('click', async () => {
+            const myRunId = ++macroRunId; // cancels any other running macro
             await initAudio();
             isMacroRunning = true;
             waveType = 'sawtooth'; updateWaveUI();
@@ -612,7 +649,7 @@
             triggerEnvelope();
             
             function riseStep() {
-                if(!isMacroRunning) return; 
+                if(myRunId !== macroRunId) return; 
                 v += 0.012; 
                 if(v >= 4.0) {
                     v = 4.0; updateKnobPosition(v, 0.1);
