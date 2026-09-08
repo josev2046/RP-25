@@ -1,13 +1,10 @@
 # RP-25 Radial Pitch Mapper
 
-**Voltage & Wave · Tuning Edition**
-Software by Jose Velazquez MA — [voltageandwave.co.uk](https://voltageandwave.co.uk/)
-
 ---
 
 ## 1. What this is
 
-The RP-25 is a browser-based reference tone generator. It exists to give you a stable, precisely-tuned pitch that you can compare by ear against an unquantised analogue sequencer (e.g. Korg SQ-10) or synthesiser oscillator, so you can tune the hardware to match.
+The RP-25 is a browser-based reference tone generator. It exists to give you a stable, precisely-tuned pitch that you can compare by ear against an unquantised analogue sequencer or synthesiser oscillator, so you can tune the hardware to match.
 
 It runs entirely in the browser using the Web Audio API. No installation or internet connection is required once the page has loaded.
 
@@ -24,13 +21,13 @@ This edition adds four things to the original RP-25:
 
 - A modern desktop or mobile browser with Web Audio API support (Chrome, Firefox, Safari, Edge).
 - Audio output (speakers or headphones).
-- A pointing device: mouse, trackpad, or touchscreen. **The interface has no keyboard controls** — every control must be operated with a pointer or touch. Bear this in mind if you rely on keyboard navigation; see [Section 10, Accessibility](#10-accessibility).
+- A pointing device: mouse, trackpad, or touchscreen. **The interface has no keyboard controls** — every control must be operated with a pointer or touch.
 
-Most browsers block audio until the page has been interacted with. The RP-25 starts its audio engine the first time you press a key or the knob — see [Section 11, Troubleshooting](#11-troubleshooting) if you get no sound.
+Most browsers block audio until the page has been interacted with. The RP-25 starts its audio engine the first time you press a key or the knob — see [Section 10, Troubleshooting](#10-troubleshooting) if you get no sound.
 
 ## 4. Panel layout
 
-<img width="1800" height="1520" alt="panel-layout-diagram" src="https://github.com/user-attachments/assets/7f1a069f-c175-485c-a7f9-b12008a7d97f" />
+<img width="1800" height="1520" alt="panel-layout-diagram" src="https://github.com/user-attachments/assets/24208276-600e-418b-afc1-16e77c19c7c0" />
 
 | # | Control | Type |
 |---|---|---|
@@ -78,7 +75,7 @@ where `key` is the note's position (0–24) on the radial arc, `octave` is the o
 
 ## 7. Audio signal path
 
-<img width="2000" height="920" alt="signal-flow-diagram" src="https://github.com/user-attachments/assets/bd5e7e9a-e6ec-44b2-a246-ec78209b80b0" />
+<img width="2000" height="920" alt="signal-flow-diagram" src="https://github.com/user-attachments/assets/6f0849cf-81a0-491c-be11-ce8d8fc1f83d" />
 
 Signal flows: **Oscillator → Lowpass filter → Amplifier (with envelope) → Master volume → Oscilloscope tap and audio output.**
 
@@ -102,18 +99,7 @@ Two points worth knowing:
 - It requires a browser with Web Audio API support. Older browsers, or browsers with Web Audio disabled, will not produce sound.
 - The rotary knob's sensitivity is fixed; a full 25-note sweep corresponds to roughly 160 pixels of vertical drag.
 
-## 10. Accessibility
-
-This is a straightforward account of the interface's current accessibility, not a claim of full compliance:
-
-- **No keyboard support.** All controls — keys, knob, buttons, slider — respond only to pointer or touch events. There is currently no way to operate the RP-25 using a keyboard alone.
-- **Visual display only.** The note, frequency, and fine-tune readout is text-based and reasonably high-contrast (green on black), but is not exposed to screen readers as live-updating content, and the oscilloscope is a purely visual waveform with no text equivalent.
-- **Colour is not the only signal.** An active key is shown by colour, position (enlarged), and glow, so colour-blind users still have position and scale as cues.
-- **Small targets.** The radial keys are compact (40×24 px), which may be difficult for users with limited fine motor control, particularly on touchscreens.
-
-If you need to operate the RP-25 without a pointing device, or need the readout available to a screen reader, treat this as a known limitation for now.
-
-## 11. Troubleshooting
+## 10. Troubleshooting
 
 | Symptom | Likely cause | What to do |
 |---|---|---|
@@ -123,7 +109,7 @@ If you need to operate the RP-25 without a pointing device, or need the readout 
 | Waveform on the scope looks flat | Nothing is currently sounding, or volume is at zero | Play a note and check the volume slider. |
 | Knob feels too sensitive or not sensitive enough | Fixed drag sensitivity | This is set in the code (0.15 units of pitch per pixel of vertical drag) and isn't user-adjustable in this version. |
 
-## 12. Credits
+## 11. Credits
 
 RP-25 Radial Pitch Mapper (Tuning Edition)
 Created and developed by Jose Velazquez MA
