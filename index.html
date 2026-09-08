@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <!-- 
-    RP-25 Radial Pitch Mapper (Tuning Edition)
+    RP-25 Radial Pitch Mapper (SQ-10 Continuous Voltage Edition)
     Created & Developed by Jose Velazquez MA
     Voltage & Wave (https://voltageandwave.co.uk/)
-    -- Patched: fixed key/knob pointer-state collision, added sine wave,
-       fine-tune (cents) control, master volume control, and oscilloscope --
+    -- Patched: Authentic -5V to +5V continuous sweep (10 Octaves),
+       C-3 to C7 frequency tracking, and full semitone radial mapping --
 -->
 <html lang="en">
 <head>
@@ -26,7 +26,7 @@
         .rack-bolt { width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #a39c8e 0%, #3a362f 80%); border: 1px solid #1a1815; box-shadow: inset 0 1px 1px rgba(255,255,255,0.6), 0 2px 4px rgba(0,0,0,0.3); position: absolute; }
         .bolt-tl { top: 12px; left: 12px; } .bolt-tr { top: 12px; right: 12px; } .bolt-bl { bottom: 12px; left: 12px; } .bolt-br { bottom: 12px; right: 12px; }
 
-        .crt-screen { background: #041004; border: 4px solid #2a2722; border-radius: 8px; box-shadow: inset 0 0 20px rgba(0, 255, 0, 0.25), inset 0 0 12px #000, 0 3px 6px rgba(0,0,0,0.4); position: relative; overflow: hidden; box-sizing: border-box; width: 100%; max-width: 320px; height: 92px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; margin-bottom: 1rem; }
+        .crt-screen { background: #041004; border: 4px solid #2a2722; border-radius: 8px; box-shadow: inset 0 0 20px rgba(0, 255, 0, 0.25), inset 0 0 12px #000, 0 3px 6px rgba(0,0,0,0.4); position: relative; overflow: hidden; box-sizing: border-box; width: 100%; max-width: 320px; height: 96px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; margin-bottom: 1rem; }
         .crt-screen::before { content: " "; position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03)); z-index: 5; background-size: 100% 3px, 6px 100%; pointer-events: none; }
         .crt-text { color: #0f0; font-family: monospace; font-size: 14px; font-weight: bold; text-shadow: 0 0 5px #0f0; z-index: 10; text-align: right; line-height: 1.3; }
 
@@ -36,19 +36,40 @@
 
         .radial-container { position: relative; width: 340px; height: 340px; display: flex; align-items: center; justify-content: center; margin-top: 1rem; }
 
-        .knob { width: 100px; height: 100px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #2d3036 0%, #15171a 70%, #050608 100%); border: 3px solid #000; cursor: ns-resize; position: relative; z-index: 20; box-shadow: inset 0 2px 4px rgba(255,255,255,0.2), 0 8px 15px rgba(0,0,0,0.5); transform: rotate(-135deg); touch-action: none; }
-        .knob::after { content: ''; position: absolute; top: 8px; left: 45px; width: 4px; height: 24px; background: #fff; border-radius: 2px; box-shadow: 0 0 4px rgba(255,255,255,0.9); }
+        /* KORG SQ-10 STYLE FLUTED KNOB */
+        .knob { 
+            width: 100px; height: 100px; border-radius: 50%; 
+            background: repeating-conic-gradient(from 0deg, #0a0b0c 0deg 4deg, #22252a 4deg 8deg); 
+            border: 2px solid #000; cursor: ns-resize; position: relative; z-index: 30; 
+            box-shadow: 0 8px 15px rgba(0,0,0,0.6); 
+            transform: rotate(-135deg); touch-action: none; 
+        }
+        .knob::before {
+            content: ''; position: absolute;
+            top: 12px; left: 12px; right: 12px; bottom: 12px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #2d3036 0%, #15171a 70%, #050608 100%);
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.1), 0 3px 6px rgba(0,0,0,0.9);
+        }
+        .knob::after { 
+            content: ''; position: absolute; 
+            top: 2px; left: 47px; width: 6px; height: 35px; 
+            background: #fff; border-radius: 1px; 
+            box-shadow: 0 0 3px rgba(255,255,255,0.6);
+            z-index: 2;
+        }
 
-        .radial-key { position: absolute; width: 40px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.4); transform-origin: center; transition: all 0.1s ease; cursor: pointer; touch-action: none; }
+        /* RADIAL KEYS & TICKS */
+        .radial-key { position: absolute; display: flex; align-items: center; justify-content: center; font-weight: bold; transform-origin: center; transition: all 0.1s ease; cursor: pointer; touch-action: none; }
         
-        .key-white { background: linear-gradient(180deg, #ffffff 0%, #d8d3c5 100%); color: #111; border: 2px solid #111; }
-        .key-black { background: linear-gradient(180deg, #333 0%, #111 100%); color: #aaa; border: 2px solid #000; z-index: 5; }
-        
-        .active-key.key-white { background: #c83a2a; color: #fff; border-color: #fff; box-shadow: 0 0 15px #c83a2a, inset 0 0 5px rgba(255,255,255,0.5); transform: scale(1.1); z-index: 15; }
-        .active-key.key-black { background: #c83a2a; color: #fff; border-color: #fff; box-shadow: 0 0 15px #c83a2a, inset 0 0 5px rgba(255,255,255,0.5); transform: scale(1.1); z-index: 15; }
+        .key-c { background: linear-gradient(180deg, #ffffff 0%, #d8d3c5 100%); color: #111; border: 2px solid #111; width: 34px; height: 20px; border-radius: 4px; z-index: 10; font-size: 9px; box-shadow: 0 4px 6px rgba(0,0,0,0.4); }
+        .mini-white { background: #d8d3c5; border: 1px solid #111; width: 3px; height: 16px; border-radius: 1px; z-index: 8; }
+        .mini-black { background: #111; border: 1px solid #000; width: 3px; height: 10px; border-radius: 1px; z-index: 5; }
+
+        .active-key.key-c { background: #c83a2a; color: #fff; border-color: #fff; box-shadow: 0 0 15px #c83a2a, inset 0 0 5px rgba(255,255,255,0.5); transform: scale(1.1); z-index: 25; }
+        .active-key.mini-white, .active-key.mini-black { background: #ff4444; border-color: #ffaaaa; box-shadow: 0 0 10px #ff4444; z-index: 25; }
 
         .panel-outline { border: 1.5px solid #38342e; border-radius: 6px; background: rgba(0, 0, 0, 0.025); box-shadow: inset 0 1px 2px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.7); padding: 2rem; display: flex; flex-direction: column; align-items: center; }
-
         .fine-row { display: flex; align-items: center; gap: 1px; background: rgba(56,52,46,0.1); padding: 4px; border-radius: 4px; border: 1px solid rgba(56,52,46,0.3); }
 
         .vol-slider { -webkit-appearance: none; appearance: none; width: 120px; height: 4px; border-radius: 2px; background: #82796e; outline: none; }
@@ -66,7 +87,7 @@
             <div class="rack-bolt bolt-bl"></div><div class="rack-bolt bolt-br"></div>
             
             <div class="flex items-center justify-between w-full mb-4 px-2">
-                <div class="text-[10px] font-black text-[#1f1a14] tracking-widest border-b-2 border-[#38342e]/30 pb-1">VOLTAGE & WAVE • RP-25 RADIAL PITCH MAPPER</div>
+                <div class="text-[10px] font-black text-[#1f1a14] tracking-widest border-b-2 border-[#38342e]/30 pb-1">VOLTAGE & WAVE • SQ-10 CONTINUOUS TUNER</div>
             </div>
 
             <div class="panel-outline w-full">
@@ -75,11 +96,12 @@
                     <div class="flex-shrink-0 flex items-center justify-center z-10">
                         <canvas id="scopeCanvas" width="130" height="50" class="border border-[#111] rounded-sm bg-[#041004]/50"></canvas>
                     </div>
-                    <div class="border-l border-[#0f0]/30 h-[60px] mx-3 z-10"></div>
+                    <div class="border-l border-[#0f0]/30 h-[70px] mx-3 z-10"></div>
                     <div class="crt-text flex-1 flex flex-col justify-center">
-                        <div id="dispNote">NOTE: --</div>
-                        <div id="dispFreq" class="text-[12px] opacity-80 mt-1">FREQ: 0.00 Hz</div>
-                        <div id="dispFine" class="text-[10px] opacity-70 mt-1">FINE: +0&cent;</div>
+                        <div id="dispVolt" class="text-[12px] opacity-90 mb-0.5">VOLT: -5.00V</div>
+                        <div id="dispNote" class="whitespace-nowrap text-[14px]">NOTE: C-3</div>
+                        <div id="dispFreq" class="text-[11px] opacity-80 mt-1">FREQ: 2.04 Hz</div>
+                        <div id="dispFine" class="text-[9px] opacity-70 mt-1">FINE: +0&cent;</div>
                     </div>
                 </div>
 
@@ -107,14 +129,14 @@
                     </div>
                 </div>
 
-                <!-- RADIAL KEYBOARD -->
+                <!-- RADIAL VOLTAGE MAP -->
                 <div class="radial-container" id="radialContainer">
                     <div class="knob" id="mainKnob"></div>
                 </div>
                 
                 <div class="mt-8 flex flex-col items-center gap-3 w-full">
                     <span class="text-[9px] font-bold text-[#5a544a] text-center tracking-widest">
-                        DRAG KNOB OR CLICK KEYS DIRECTLY TO TUNE
+                        DRAG KNOB FOR FULL ±5V ANALOG SWEEP
                     </span>
                     <div class="text-[9px] text-[#38342e] font-mono font-bold tracking-widest text-center w-full border-t border-[#38342e]/30 pt-3">
                         &copy; JOSE VELAZQUEZ MA / <a href="https://voltageandwave.co.uk/" target="_blank" rel="noopener noreferrer" class="hover:text-[#c83a2a] underline transition-colors">VOLTAGE &amp; WAVE</a>
@@ -128,22 +150,24 @@
 
     <script>
         const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-        const totalNotes = 25; // 2 Octaves inclusive
-        const radius = 145; 
+        const totalSemitones = 120; // 10 Octaves (-5V to +5V)
         const arcSweep = 270;
         const startAngle = -135; 
 
         // Audio & State
         let audioCtx, osc, vcf, vca, masterGain, analyser;
-        let currentNoteIndex = -1;
         let isHold = false;
-        let waveType = 'sawtooth'; // 'sawtooth' -> 'triangle' -> 'sine' -> ...
-        let octaveOffset = 0; // 0 = C2 base
-        let fineCents = 0; // -50..+50 cents fine tune
+        let waveType = 'sawtooth'; 
+        let octaveOffset = 0; 
+        let fineCents = 0; 
         let masterVolume = 0.5;
+
+        // Voltage Value: -5.0V to +5.0V
+        let currentVoltage = -5.0;
 
         const radialContainer = document.getElementById('radialContainer');
         const mainKnob = document.getElementById('mainKnob');
+        const dispVolt = document.getElementById('dispVolt');
         const dispNote = document.getElementById('dispNote');
         const dispFreq = document.getElementById('dispFreq');
         const dispFine = document.getElementById('dispFine');
@@ -157,49 +181,65 @@
         const btnFineUp = document.getElementById('btnFineUp');
         const volSlider = document.getElementById('volSlider');
 
-        const keys = [];
+        const allKeys = [];
 
-        // Generate radial keys
-        for (let i = 0; i < totalNotes; i++) {
-            const angleDeg = startAngle + (i / (totalNotes - 1)) * arcSweep;
+        // Generate full 121-note dial (10 Octaves inclusive)
+        for (let i = 0; i <= totalSemitones; i++) {
+            const voltage = -5 + (i / 12);
+            const angleDeg = startAngle + (i / totalSemitones) * arcSweep;
             const angleRad = (angleDeg - 90) * (Math.PI / 180); 
             
-            const x = Math.cos(angleRad) * radius;
-            const y = Math.sin(angleRad) * radius;
-            
-            const noteChar = noteNames[i % 12];
+            const noteIndex = i % 12;
+            const isC = noteIndex === 0;
+            const noteChar = noteNames[noteIndex];
             const isBlack = noteChar.includes('#');
 
             const keyEl = document.createElement('div');
-            keyEl.className = `radial-key ${isBlack ? 'key-black' : 'key-white'}`;
-            keyEl.dataset.index = i;
-            keyEl.style.transform = `translate(${x}px, ${y}px) rotate(${angleDeg}deg)`;
+            
+            if (isC) {
+                const r = 135; // Outer ring for C notes
+                const x = Math.cos(angleRad) * r;
+                const y = Math.sin(angleRad) * r;
+                keyEl.className = 'radial-key key-c';
+                keyEl.dataset.voltage = voltage;
+                keyEl.style.transform = `translate(${x}px, ${y}px) rotate(${angleDeg}deg)`;
+            } else {
+                const r = isBlack ? 92 : 98; // Inner ring for semitone ticks
+                const x = Math.cos(angleRad) * r;
+                const y = Math.sin(angleRad) * r;
+                keyEl.className = `radial-key ${isBlack ? 'mini-black' : 'mini-white'}`;
+                keyEl.dataset.voltage = voltage;
+                keyEl.style.transform = `translate(${x}px, ${y}px) rotate(${angleDeg}deg)`;
+            }
             
             keyEl.addEventListener('pointerdown', async (e) => {
                 e.stopPropagation();
                 await initAudio();
                 try { keyEl.setPointerCapture(e.pointerId); } catch (err) {}
-                const noteIndex = parseInt(e.currentTarget.dataset.index, 10);
-                updateKnobPosition(noteIndex);
-                triggerNote(noteIndex);
+                
+                const targetVoltage = parseFloat(e.currentTarget.dataset.voltage);
+                updateKnobPosition(targetVoltage);
+                triggerEnvelope();
             });
 
             const releaseKey = (e) => {
                 try { keyEl.releasePointerCapture(e.pointerId); } catch (err) {}
-                if (!isHold) releaseNote();
+                if (!isHold) releaseEnvelope();
             };
             keyEl.addEventListener('pointerup', releaseKey);
             keyEl.addEventListener('pointercancel', releaseKey);
 
             radialContainer.appendChild(keyEl);
-            keys.push(keyEl);
+            allKeys.push(keyEl);
         }
 
         function updateKeyLabels() {
-            keys.forEach((keyEl, i) => {
-                const octave = 2 + octaveOffset + Math.floor(i / 12);
-                const noteChar = noteNames[i % 12];
-                keyEl.innerText = `${noteChar}${octave}`;
+            allKeys.forEach((keyEl) => {
+                if (keyEl.classList.contains('key-c')) {
+                    const v = parseFloat(keyEl.dataset.voltage);
+                    const octave = v + 2 + octaveOffset;
+                    keyEl.innerText = `C${octave}`;
+                }
             });
         }
         updateKeyLabels(); 
@@ -223,11 +263,11 @@
                 osc.connect(vcf);
                 vcf.connect(vca);
                 vca.connect(masterGain);
-                masterGain.connect(analyser); // scope reads after master volume
+                masterGain.connect(analyser);
                 analyser.connect(audioCtx.destination);
                 
                 osc.start();
-                drawScope(); // Start Oscilloscope loop
+                drawScope();
             }
             if (audioCtx.state === 'suspended') await audioCtx.resume();
         }
@@ -255,30 +295,53 @@
             let x = 0;
 
             for (let i = 0; i < bufferLength; i++) {
-                const v = dataArray[i] / 128.0;
-                const y = v * canvas.height / 2;
+                const val = dataArray[i] / 128.0;
+                const y = val * canvas.height / 2;
 
-                if (i === 0) {
-                    ctx.moveTo(x, y);
-                } else {
-                    ctx.lineTo(x, y);
-                }
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
                 x += sliceWidth;
             }
             ctx.lineTo(canvas.width, canvas.height / 2);
             ctx.stroke();
         }
 
-        function triggerNote(noteIndex) {
+        // --- 1V/Octave Continuous Pitch Logic ---
+        function updatePitch(voltage) {
             if (!audioCtx) return;
             const now = audioCtx.currentTime;
             
-            // Calculate actual pitch including octave shift and fine-tune cents
-            const totalSemitones = noteIndex + (octaveOffset * 12);
-            const freq = 65.41 * Math.pow(2, totalSemitones / 12) * Math.pow(2, fineCents / 1200); 
-
-            osc.frequency.setTargetAtTime(freq, now, 0.01);
+            const semitonesFromC2 = voltage * 12;
+            const totalSemitones = semitonesFromC2 + (octaveOffset * 12);
             
+            const freq = 65.41 * Math.pow(2, totalSemitones / 12) * Math.pow(2, fineCents / 1200); 
+            osc.frequency.setTargetAtTime(freq, now, 0.01);
+
+            const nearestSemitone = Math.round(semitonesFromC2);
+            const noteIndex = ((nearestSemitone % 12) + 12) % 12;
+            const noteChar = noteNames[noteIndex];
+            const octave = 2 + octaveOffset + Math.floor(nearestSemitone / 12);
+            
+            const detuneCents = Math.round((semitonesFromC2 - nearestSemitone) * 100);
+            let detuneStr = detuneCents > 0 ? ` +${detuneCents}¢` : (detuneCents < 0 ? ` ${detuneCents}¢` : '');
+
+            dispVolt.innerText = `VOLT: ${voltage >= 0 ? '+' : ''}${voltage.toFixed(2)}V`;
+            dispNote.innerText = `NOTE: ${noteChar}${octave}${detuneStr}`;
+            dispFreq.innerText = `FREQ: ${freq.toFixed(2)} Hz`;
+
+            // Calculate the absolute index in our 121-note array to highlight it
+            const absoluteNoteIndex = nearestSemitone + 60; // -5V * 12 = -60. So -60 is index 0.
+            
+            allKeys.forEach((k, idx) => {
+                if (idx === absoluteNoteIndex && detuneCents === 0) k.classList.add('active-key');
+                else k.classList.remove('active-key');
+            });
+        }
+
+        function triggerEnvelope() {
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+
             const filterByWave = { sawtooth: 4000, triangle: 8000, sine: 20000 };
             const targetFilter = filterByWave[waveType] ?? 4000;
             vcf.frequency.cancelScheduledValues(now);
@@ -288,39 +351,25 @@
             vca.gain.cancelScheduledValues(now);
             vca.gain.setValueAtTime(vca.gain.value || 0.0001, now);
             vca.gain.linearRampToValueAtTime(0.5, now + 0.02);
-
-            // Update UI
-            const noteChar = noteNames[noteIndex % 12];
-            const octave = 2 + octaveOffset + Math.floor(noteIndex / 12);
-            dispNote.innerText = `NOTE: ${noteChar}${octave}`;
-            dispFreq.innerText = `FREQ: ${freq.toFixed(2)} Hz`;
-
-            keys.forEach((k, idx) => {
-                if (idx === noteIndex) k.classList.add('active-key');
-                else k.classList.remove('active-key');
-            });
         }
 
-        function releaseNote() {
+        function releaseEnvelope() {
             if (isHold || !audioCtx || !vca) return;
-            
             const now = audioCtx.currentTime;
             vca.gain.cancelScheduledValues(now);
             vca.gain.setValueAtTime(vca.gain.value, now);
             vca.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
-            
-            keys.forEach(k => k.classList.remove('active-key'));
-            currentNoteIndex = -1;
+            allKeys.forEach(k => k.classList.remove('active-key'));
         }
 
-        function updateKnobPosition(noteIndex) {
-            currentVal = noteIndex;
-            currentNoteIndex = noteIndex;
-            const angle = startAngle + (currentVal / (totalNotes - 1)) * arcSweep;
+        function updateKnobPosition(voltage) {
+            currentVoltage = voltage;
+            const angle = startAngle + ((currentVoltage + 5) / 10) * arcSweep;
             mainKnob.style.transform = `rotate(${angle}deg)`;
+            updatePitch(currentVoltage);
         }
 
-        // UI Control Listeners
+        // --- UI Listeners ---
         btnHold.addEventListener('click', () => {
             isHold = !isHold;
             if (isHold) {
@@ -329,7 +378,7 @@
             } else {
                 btnHold.classList.remove('active-toggle');
                 btnHold.innerText = 'HOLD: OFF';
-                if (!activeDrag) releaseNote();
+                if (!activeDrag) releaseEnvelope();
             }
         });
 
@@ -340,28 +389,24 @@
             waveType = waveCycle[nextIdx];
             btnWave.innerText = `WAVE: ${waveLabels[waveType]}`;
             if (osc) osc.type = waveType;
-            if (currentNoteIndex !== -1) triggerNote(currentNoteIndex); 
+            if (isHold || activeDrag) triggerEnvelope(); 
         });
 
         function changeOctave(dir) {
             octaveOffset += dir;
             octaveOffset = Math.max(-2, Math.min(3, octaveOffset)); 
-            
             dispOct.innerText = `OCT ${octaveOffset > 0 ? '+' : ''}${octaveOffset}`;
             updateKeyLabels();
-            
-            if (currentNoteIndex !== -1 && isHold) triggerNote(currentNoteIndex); 
+            if (activeDrag || isHold) updatePitch(currentVoltage); 
         }
-
         btnOctDown.addEventListener('click', () => changeOctave(-1));
         btnOctUp.addEventListener('click', () => changeOctave(1));
 
         function changeFine(deltaCents) {
             fineCents = Math.max(-50, Math.min(50, fineCents + deltaCents));
             dispFine.innerHTML = `FINE: ${fineCents > 0 ? '+' : ''}${fineCents}&cent;`;
-            if (currentNoteIndex !== -1) triggerNote(currentNoteIndex); 
+            if (activeDrag || isHold) updatePitch(currentVoltage); 
         }
-
         btnFineDown.addEventListener('click', () => changeFine(-1));
         btnFineUp.addEventListener('click', () => changeFine(1));
         
@@ -383,10 +428,9 @@
             if (masterGain) masterGain.gain.setTargetAtTime(masterVolume, audioCtx.currentTime, 0.01);
         });
 
-        // Knob Drag Logic
+        // --- Continuous Drag Logic ---
         let activeDrag = false;
         let startY = 0;
-        let currentVal = 0;
 
         mainKnob.addEventListener('pointerdown', async (e) => {
             await initAudio();
@@ -394,9 +438,8 @@
             mainKnob.setPointerCapture(e.pointerId);
             startY = e.clientY;
             
-            const snappedNote = Math.round(currentVal);
-            currentNoteIndex = snappedNote;
-            triggerNote(snappedNote);
+            updatePitch(currentVoltage);
+            triggerEnvelope();
         });
 
         document.addEventListener('pointermove', (e) => {
@@ -405,28 +448,28 @@
             const deltaY = startY - e.clientY;
             startY = e.clientY;
             
-            currentVal = Math.max(0, Math.min(totalNotes - 1, currentVal + (deltaY * 0.15)));
+            // Adjust voltage smoothly (0.01V per pixel drag)
+            currentVoltage = Math.max(-5.0, Math.min(5.0, currentVoltage + (deltaY * 0.015)));
             
-            const angle = startAngle + (currentVal / (totalNotes - 1)) * arcSweep;
+            const angle = startAngle + ((currentVoltage + 5) / 10) * arcSweep;
             mainKnob.style.transform = `rotate(${angle}deg)`;
 
-            const snappedNote = Math.round(currentVal);
-            if (snappedNote !== currentNoteIndex) {
-                currentNoteIndex = snappedNote;
-                triggerNote(currentNoteIndex);
-            }
+            updatePitch(currentVoltage); 
         });
 
         const endDrag = (e) => {
             if (activeDrag) {
                 activeDrag = false;
                 try { mainKnob.releasePointerCapture(e.pointerId); } catch(err){}
-                releaseNote();
+                releaseEnvelope();
             }
         };
 
         document.addEventListener('pointerup', endDrag);
         document.addEventListener('pointercancel', endDrag);
+        
+        // Initialize dial position visually before audio interaction
+        updateKnobPosition(0);
     </script>
 </body>
 </html>
