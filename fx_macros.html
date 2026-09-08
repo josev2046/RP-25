@@ -3,7 +3,7 @@
     RP-25 Radial Pitch Mapper (SQ-10 Continuous + Creative Edition)
     Created & Developed by Jose Velazquez MA
     Voltage & Wave (https://voltageandwave.co.uk/)
-    -- Patched: Added Ambient FX (Delay/Reverb) and Performative Automation Macros --
+    -- Patched: Added Ambient FX, Foley Macros, and Hidden Easter Egg Auto-Players --
 -->
 <html lang="en">
 <head>
@@ -22,7 +22,9 @@
 
         .chassis { background: radial-gradient(circle at 50% 20%, #f0ebd8 0%, #e2dbc8 60%, #cebba8 100%); border-top: 3px solid #f7f4e9; border-bottom: 4px solid #82796e; padding: 32px; flex-grow: 1; position: relative; display: flex; flex-direction: column; align-items: center; box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.8), inset 0 -2px 5px rgba(0,0,0,0.3); }
 
-        .rack-bolt { width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #a39c8e 0%, #3a362f 80%); border: 1px solid #1a1815; box-shadow: inset 0 1px 1px rgba(255,255,255,0.6), 0 2px 4px rgba(0,0,0,0.3); position: absolute; }
+        /* Rack Bolts now double as secret buttons */
+        .rack-bolt { width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #a39c8e 0%, #3a362f 80%); border: 1px solid #1a1815; box-shadow: inset 0 1px 1px rgba(255,255,255,0.6), 0 2px 4px rgba(0,0,0,0.3); position: absolute; cursor: pointer; transition: transform 0.1s ease; }
+        .rack-bolt:active { transform: scale(0.85); box-shadow: inset 0 2px 4px rgba(0,0,0,0.6); }
         .bolt-tl { top: 12px; left: 12px; } .bolt-tr { top: 12px; right: 12px; } .bolt-bl { bottom: 12px; left: 12px; } .bolt-br { bottom: 12px; right: 12px; }
 
         .crt-screen { background: #041004; border: 4px solid #2a2722; border-radius: 8px; box-shadow: inset 0 0 20px rgba(0, 255, 0, 0.25), inset 0 0 12px #000, 0 3px 6px rgba(0,0,0,0.4); position: relative; overflow: hidden; box-sizing: border-box; width: 100%; max-width: 320px; height: 96px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; margin-bottom: 1rem; }
@@ -35,7 +37,7 @@
 
         .radial-container { position: relative; width: 340px; height: 340px; display: flex; align-items: center; justify-content: center; margin-top: 1rem; }
 
-        .knob { width: 100px; height: 100px; border-radius: 50%; background: repeating-conic-gradient(from 0deg, #0a0b0c 0deg 4deg, #22252a 4deg 8deg); border: 2px solid #000; cursor: ns-resize; position: relative; z-index: 30; box-shadow: 0 8px 15px rgba(0,0,0,0.6); transform: rotate(-135deg); touch-action: none; }
+        .knob { width: 100px; height: 100px; border-radius: 50%; background: repeating-conic-gradient(from 0deg, #0a0b0c 0deg 4deg, #22252a 4deg 8deg); border: 2px solid #000; cursor: ns-resize; position: relative; z-index: 30; box-shadow: 0 8px 15px rgba(0,0,0,0.6); transform: rotate(-135deg); touch-action: none; transition: transform 0.05s ease-out; }
         .knob::before { content: ''; position: absolute; top: 12px; left: 12px; right: 12px; bottom: 12px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #2d3036 0%, #15171a 70%, #050608 100%); box-shadow: inset 0 2px 4px rgba(255,255,255,0.1), 0 3px 6px rgba(0,0,0,0.9); }
         .knob::after { content: ''; position: absolute; top: 2px; left: 47px; width: 6px; height: 35px; background: #fff; border-radius: 1px; box-shadow: 0 0 3px rgba(255,255,255,0.6); z-index: 2; }
 
@@ -59,8 +61,10 @@
         <div class="wooden-ear wooden-ear-left"></div>
 
         <div class="chassis">
-            <div class="rack-bolt bolt-tl"></div><div class="rack-bolt bolt-tr"></div>
-            <div class="rack-bolt bolt-bl"></div><div class="rack-bolt bolt-br"></div>
+            <div class="rack-bolt bolt-tl" id="bolt-tl" title="Secret 1"></div>
+            <div class="rack-bolt bolt-tr" id="bolt-tr" title="Secret 2"></div>
+            <div class="rack-bolt bolt-bl" id="bolt-bl" title="Secret 3"></div>
+            <div class="rack-bolt bolt-br" id="bolt-br" title="Secret 4"></div>
             
             <div class="flex items-center justify-between w-full mb-4 px-2">
                 <div class="text-[10px] font-black text-[#1f1a14] tracking-widest border-b-2 border-[#38342e]/30 pb-1">VOLTAGE & WAVE • SQ-10 CONTINUOUS TUNER</div>
@@ -81,7 +85,6 @@
                     </div>
                 </div>
 
-                <!-- TUNING CONTROLS -->
                 <div class="flex gap-4 w-full max-w-[320px] justify-between items-center border-b border-[#38342e]/20 pb-4">
                     <button id="btnHold" class="tactile-button px-3 py-1.5 rounded text-[10px] font-bold w-[75px]">HOLD: OFF</button>
                     <button id="btnWave" class="tactile-button px-3 py-1.5 rounded text-[10px] font-bold w-[75px]">WAVE: SAW</button>
@@ -92,7 +95,6 @@
                     </div>
                 </div>
 
-                <!-- FINE TUNE + VOLUME -->
                 <div class="flex gap-3 w-full max-w-[320px] justify-between items-center pt-3 pb-1">
                     <div class="fine-row">
                         <button id="btnFineDown" class="tactile-button px-2 py-0.5 rounded text-[12px] font-bold">-</button>
@@ -105,7 +107,6 @@
                     </div>
                 </div>
 
-                <!-- RADIAL VOLTAGE MAP -->
                 <div class="radial-container" id="radialContainer">
                     <div class="knob" id="mainKnob"></div>
                 </div>
@@ -114,13 +115,13 @@
             <!-- CREATIVE FX & MACROS -->
             <div class="w-full border-t border-[#38342e]/30 pt-4 flex flex-col items-center gap-3">
                 <span class="text-[9px] font-bold text-[#5a544a] tracking-widest mb-1">CREATIVE POTENTIAL / FX MACROS</span>
-                <div class="flex gap-3 flex-wrap justify-center w-full">
+                <div class="flex gap-2 flex-wrap justify-center w-full">
                     <button id="btnDelay" class="tactile-button px-3 py-1.5 rounded text-[9px] font-bold tracking-wider">DELAY</button>
                     <button id="btnReverb" class="tactile-button px-3 py-1.5 rounded text-[9px] font-bold tracking-wider">REVERB</button>
-                    <div class="border-l border-[#38342e]/30 h-[24px]"></div>
+                    <div class="border-l border-[#38342e]/30 h-[24px] mx-1"></div>
                     <button id="btnTheremin" class="tactile-button px-3 py-1.5 rounded text-[9px] font-bold tracking-wider">THEREMIN</button>
-                    <button id="btnLaser" class="tactile-button px-3 py-1.5 rounded text-[9px] font-bold tracking-wider">LASER DROP</button>
-                    <button id="btnRiser" class="tactile-button px-3 py-1.5 rounded text-[9px] font-bold tracking-wider">TENSION RISER</button>
+                    <button id="btnLaser" class="tactile-button px-3 py-1.5 rounded text-[9px] font-bold tracking-wider">LASER</button>
+                    <button id="btnRiser" class="tactile-button px-3 py-1.5 rounded text-[9px] font-bold tracking-wider">RISER</button>
                 </div>
                 <div class="text-[9px] text-[#38342e] font-mono font-bold tracking-widest text-center w-full mt-4">
                     &copy; JOSE VELAZQUEZ MA / <a href="https://voltageandwave.co.uk/" target="_blank" rel="noopener noreferrer" class="hover:text-[#c83a2a] underline transition-colors">VOLTAGE &amp; WAVE</a>
@@ -136,10 +137,9 @@
         const totalSemitones = 120; // 10 Octaves (-5V to +5V)
         const arcSweep = 270;
         const startAngle = -135; 
+        const V = (oct, semi) => oct + (semi/12); // Helper for 1V/Octave mappings
 
-        // Audio & State
         let audioCtx, osc, vcf, vca, masterGain, analyser;
-        // FX Nodes
         let delayNode, feedbackGain, reverbNode, dryGain, delayOutGain, reverbOutGain;
         
         let isHold = false;
@@ -177,6 +177,7 @@
 
         const allKeys = [];
 
+        // Generate 121 markers (-5V to +5V)
         for (let i = 0; i <= totalSemitones; i++) {
             const voltage = -5 + (i / 12);
             const angleDeg = startAngle + (i / totalSemitones) * arcSweep;
@@ -207,7 +208,7 @@
             
             keyEl.addEventListener('pointerdown', async (e) => {
                 e.stopPropagation();
-                if(isMacroRunning) return;
+                if(isMacroRunning) { isMacroRunning = false; } 
                 await initAudio();
                 try { keyEl.setPointerCapture(e.pointerId); } catch (err) {}
                 
@@ -239,11 +240,10 @@
         }
         updateKeyLabels(); 
 
-        // Generates a synthetic impulse response for the reverb convolver
-        function generateImpulseResponse() {
-            const sampleRate = audioCtx.sampleRate;
-            const length = sampleRate * 2.5; // 2.5 seconds
-            const impulse = audioCtx.createBuffer(2, length, sampleRate);
+        function generateImpulseResponse(ctx) {
+            const sampleRate = ctx.sampleRate;
+            const length = sampleRate * 2.5; 
+            const impulse = ctx.createBuffer(2, length, sampleRate);
             const left = impulse.getChannelData(0);
             const right = impulse.getChannelData(1);
             for (let i = 0; i < length; i++) {
@@ -256,7 +256,9 @@
 
         async function initAudio() {
             if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+                
                 osc = audioCtx.createOscillator();
                 vcf = audioCtx.createBiquadFilter();
                 vca = audioCtx.createGain();
@@ -270,36 +272,31 @@
                 masterGain.gain.value = masterVolume;
                 analyser.fftSize = 512;
                 
-                // FX Nodes
                 dryGain = audioCtx.createGain();
                 dryGain.gain.value = 1.0;
                 
                 delayNode = audioCtx.createDelay(2.0);
-                delayNode.delayTime.value = 0.35; // 350ms delay
+                delayNode.delayTime.value = 0.35; 
                 feedbackGain = audioCtx.createGain();
-                feedbackGain.gain.value = 0.5; // 50% feedback
+                feedbackGain.gain.value = 0.5; 
                 delayOutGain = audioCtx.createGain();
-                delayOutGain.gain.value = 0; // Off by default
+                delayOutGain.gain.value = 0; 
                 
                 reverbNode = audioCtx.createConvolver();
-                reverbNode.buffer = generateImpulseResponse();
+                reverbNode.buffer = generateImpulseResponse(audioCtx);
                 reverbOutGain = audioCtx.createGain();
-                reverbOutGain.gain.value = 0; // Off by default
+                reverbOutGain.gain.value = 0; 
 
-                // Routing
                 osc.connect(vcf);
                 vcf.connect(vca);
                 
-                // VCA splits to Dry, Delay, and Reverb
                 vca.connect(dryGain);
                 vca.connect(delayNode);
                 vca.connect(reverbNode);
 
-                // Delay Feedback Loop
                 delayNode.connect(feedbackGain);
                 feedbackGain.connect(delayNode);
                 
-                // FX Returns
                 delayNode.connect(delayOutGain);
                 reverbNode.connect(reverbOutGain);
                 
@@ -356,7 +353,6 @@
             const totalSemitones = semitonesFromC2 + (octaveOffset * 12);
             const freq = 65.41 * Math.pow(2, totalSemitones / 12) * Math.pow(2, fineCents / 1200); 
             
-            // Added glideTime parameter for macro sweeps
             osc.frequency.setTargetAtTime(freq, now, glideTime);
 
             const nearestSemitone = Math.round(semitonesFromC2);
@@ -381,7 +377,7 @@
         function triggerEnvelope() {
             if (!audioCtx) return;
             const now = audioCtx.currentTime;
-            const filterByWave = { sawtooth: 4000, triangle: 8000, sine: 20000 };
+            const filterByWave = { sawtooth: 4000, triangle: 8000, sine: 20000, square: 8000 };
             const targetFilter = filterByWave[waveType] ?? 4000;
             vcf.frequency.cancelScheduledValues(now);
             vcf.frequency.setValueAtTime(vcf.frequency.value || 400, now);
@@ -392,8 +388,8 @@
             vca.gain.linearRampToValueAtTime(0.5, now + 0.02);
         }
 
-        function releaseEnvelope() {
-            if (isHold || !audioCtx || !vca) return;
+        function releaseEnvelope(force = false) {
+            if ((isHold && !force) || !audioCtx || !vca) return;
             const now = audioCtx.currentTime;
             vca.gain.cancelScheduledValues(now);
             vca.gain.setValueAtTime(vca.gain.value, now);
@@ -408,7 +404,6 @@
             updatePitch(currentVoltage, glide);
         }
 
-        // --- Standard UI Listeners ---
         function toggleHold(state) {
             isHold = state;
             if (isHold) {
@@ -422,21 +417,20 @@
         }
         btnHold.addEventListener('click', () => toggleHold(!isHold));
 
-        const waveCycle = ['sawtooth', 'triangle', 'sine'];
-        const waveLabels = { sawtooth: 'SAW', triangle: 'TRI', sine: 'SIN' };
+        const waveCycle = ['sawtooth', 'triangle', 'sine', 'square'];
+        const waveLabels = { sawtooth: 'SAW', triangle: 'TRI', sine: 'SIN', square: 'SQR' };
         function updateWaveUI() {
             btnWave.innerText = `WAVE: ${waveLabels[waveType]}`;
             if (osc) osc.type = waveType;
         }
         btnWave.addEventListener('click', () => {
-            if(isMacroRunning) return;
+            if(isMacroRunning) { isMacroRunning = false; }
             const nextIdx = (waveCycle.indexOf(waveType) + 1) % waveCycle.length;
             waveType = waveCycle[nextIdx];
             updateWaveUI();
             if (isHold || activeDrag) triggerEnvelope(); 
         });
 
-        // --- FX Listeners ---
         function toggleDelay(state) {
             isDelayActive = state;
             if (isDelayActive) {
@@ -461,73 +455,7 @@
         }
         btnReverb.addEventListener('click', async () => { await initAudio(); toggleReverb(!isReverbActive); });
 
-        // --- Macros ---
-        btnTheremin.addEventListener('click', async () => {
-            if(isMacroRunning) return;
-            await initAudio();
-            waveType = 'sine'; updateWaveUI();
-            toggleDelay(true); toggleReverb(true);
-            toggleHold(true);
-            updateKnobPosition(0);
-            triggerEnvelope();
-        });
-
-        btnLaser.addEventListener('click', async () => {
-            if(isMacroRunning) return;
-            await initAudio();
-            isMacroRunning = true;
-            waveType = 'sawtooth'; updateWaveUI();
-            toggleHold(true);
-            toggleDelay(true);
-            
-            let v = 4.0;
-            updateKnobPosition(v, 0.01);
-            triggerEnvelope();
-            
-            function dropStep() {
-                v -= 0.3; // Fast drop
-                if(v <= -5.0) {
-                    v = -5.0;
-                    updateKnobPosition(v, 0.05);
-                    toggleHold(false);
-                    isMacroRunning = false;
-                } else {
-                    updateKnobPosition(v, 0.05);
-                    requestAnimationFrame(dropStep);
-                }
-            }
-            // slight delay before dropping
-            setTimeout(() => requestAnimationFrame(dropStep), 50);
-        });
-
-        btnRiser.addEventListener('click', async () => {
-            if(isMacroRunning) return;
-            await initAudio();
-            isMacroRunning = true;
-            waveType = 'sawtooth'; updateWaveUI();
-            toggleDelay(true); toggleReverb(true);
-            toggleHold(true);
-            
-            let v = -4.0;
-            updateKnobPosition(v, 0.01);
-            triggerEnvelope();
-            
-            function riseStep() {
-                v += 0.012; // Slow rise
-                if(v >= 4.0) {
-                    v = 4.0;
-                    updateKnobPosition(v, 0.1);
-                    toggleHold(false);
-                    isMacroRunning = false;
-                } else {
-                    updateKnobPosition(v, 0.1);
-                    requestAnimationFrame(riseStep);
-                }
-            }
-            requestAnimationFrame(riseStep);
-        });
-
-        // --- Hardware Logic ---
+        // --- Hardware Tuning Logic ---
         function changeOctave(dir) {
             octaveOffset += dir;
             octaveOffset = Math.max(-2, Math.min(3, octaveOffset)); 
@@ -564,7 +492,7 @@
         let startY = 0;
 
         mainKnob.addEventListener('pointerdown', async (e) => {
-            if(isMacroRunning) return;
+            if(isMacroRunning) { isMacroRunning = false; } 
             await initAudio();
             activeDrag = true;
             mainKnob.setPointerCapture(e.pointerId);
@@ -596,6 +524,176 @@
 
         document.addEventListener('pointerup', endDrag);
         document.addEventListener('pointercancel', endDrag);
+
+        // --- Unified Macro Player Engine ---
+        function playMelodyMacro(wave, melodyData) {
+            isMacroRunning = false; 
+            releaseEnvelope(true); 
+            
+            setTimeout(async () => {
+                await initAudio();
+                isMacroRunning = true;
+                waveType = wave; updateWaveUI();
+                toggleDelay(true); toggleReverb(true);
+                toggleHold(true);
+
+                let i = 0;
+                function playNext() {
+                    if (!isMacroRunning) return; 
+                    if (i >= melodyData.length) {
+                        toggleHold(false);
+                        isMacroRunning = false;
+                        return;
+                    }
+                    const note = melodyData[i];
+                    if (note.v !== null) {
+                        const glide = wave === 'sine' ? 0.05 : 0.01; 
+                        updateKnobPosition(note.v, glide);
+                        triggerEnvelope();
+                        
+                        const releaseTime = note.dur > 150 ? note.dur - 50 : note.dur - 10;
+                        setTimeout(() => {
+                            if (isMacroRunning) releaseEnvelope(true);
+                        }, releaseTime);
+                    } else {
+                        releaseEnvelope(true);
+                    }
+                    setTimeout(() => {
+                        i++;
+                        playNext();
+                    }, note.dur);
+                }
+                playNext();
+            }, 100);
+        }
+
+        // --- Foley Macros ---
+        btnTheremin.addEventListener('click', async () => {
+            await initAudio();
+            isMacroRunning = false; 
+            waveType = 'sine'; updateWaveUI();
+            toggleDelay(true); toggleReverb(true);
+            toggleHold(true);
+            updateKnobPosition(0);
+            triggerEnvelope();
+        });
+
+        btnLaser.addEventListener('click', async () => {
+            await initAudio();
+            isMacroRunning = true;
+            waveType = 'sawtooth'; updateWaveUI();
+            toggleHold(true); toggleDelay(true);
+            
+            let v = 4.0;
+            updateKnobPosition(v, 0.01);
+            triggerEnvelope();
+            
+            function dropStep() {
+                if(!isMacroRunning) return; 
+                v -= 0.3; 
+                if(v <= -5.0) {
+                    v = -5.0; updateKnobPosition(v, 0.05);
+                    toggleHold(false); isMacroRunning = false;
+                } else {
+                    updateKnobPosition(v, 0.05); requestAnimationFrame(dropStep);
+                }
+            }
+            setTimeout(() => requestAnimationFrame(dropStep), 50);
+        });
+
+        btnRiser.addEventListener('click', async () => {
+            await initAudio();
+            isMacroRunning = true;
+            waveType = 'sawtooth'; updateWaveUI();
+            toggleDelay(true); toggleReverb(true); toggleHold(true);
+            
+            let v = -4.0;
+            updateKnobPosition(v, 0.01);
+            triggerEnvelope();
+            
+            function riseStep() {
+                if(!isMacroRunning) return; 
+                v += 0.012; 
+                if(v >= 4.0) {
+                    v = 4.0; updateKnobPosition(v, 0.1);
+                    toggleHold(false); isMacroRunning = false;
+                } else {
+                    updateKnobPosition(v, 0.1); requestAnimationFrame(riseStep);
+                }
+            }
+            requestAnimationFrame(riseStep);
+        });
+
+        // --- Easter Egg Song Macros (Attached to Rack Bolts) ---
+        document.getElementById('bolt-tl').addEventListener('click', () => {
+            // Sweet Dreams
+            const S = [
+                { v: V(2, 0), dur: 200 }, { v: V(2, 0), dur: 200 }, { v: V(2, 3), dur: 200 }, { v: V(2, 0), dur: 200 },
+                { v: V(2, 5), dur: 200 }, { v: V(2, 0), dur: 200 }, { v: V(2, 3), dur: 200 }, { v: V(2, 0), dur: 200 },
+                { v: V(1, 8), dur: 200 }, { v: V(1, 8), dur: 200 }, { v: V(1, 8), dur: 200 }, { v: V(1, 8), dur: 200 },
+                { v: V(1, 7), dur: 200 }, { v: V(1, 7), dur: 200 }, { v: V(1, 7), dur: 200 }, { v: V(1, 7), dur: 200 }
+            ];
+            const melody = [...S, ...S, ...S, ...S];
+            playMelodyMacro('sawtooth', melody); 
+        });
+
+        document.getElementById('bolt-tr').addEventListener('click', () => {
+            // Contact (Close Encounters)
+            const melody = [
+                { v: V(2, 2), dur: 600 },  { v: null, dur: 100 },
+                { v: V(2, 4), dur: 600 },  { v: null, dur: 100 },
+                { v: V(2, 0), dur: 600 },  { v: null, dur: 100 },
+                { v: V(1, 0), dur: 600 },  { v: null, dur: 100 },
+                { v: V(1, 7), dur: 1500 }
+            ];
+            playMelodyMacro('sine', melody); 
+        });
+
+        document.getElementById('bolt-bl').addEventListener('click', () => {
+            // Paint It Black
+            const melody = [
+                { v: V(2, 4), dur: 400 }, { v: V(2, 6), dur: 400 }, { v: V(2, 7), dur: 400 }, { v: V(2, 9), dur: 400 },
+                { v: V(2, 7), dur: 400 }, { v: V(2, 6), dur: 400 }, { v: V(2, 4), dur: 400 }, { v: null, dur: 100 },
+                { v: V(2, 3), dur: 400 }, { v: V(2, 4), dur: 400 }, { v: V(2, 6), dur: 800 }, { v: null, dur: 400 },
+
+                { v: V(2, 4), dur: 400 }, { v: V(2, 6), dur: 400 }, { v: V(2, 7), dur: 400 }, { v: V(2, 9), dur: 400 },
+                { v: V(2, 7), dur: 400 }, { v: V(2, 6), dur: 400 }, { v: V(2, 4), dur: 400 }, { v: null, dur: 100 },
+                { v: V(2, 3), dur: 400 }, { v: V(2, 4), dur: 400 }, { v: V(2, 6), dur: 800 }, { v: null, dur: 400 },
+
+                { v: V(1, 11), dur: 300 }, { v: V(2, 4), dur: 400 }, { v: V(2, 4), dur: 400 }, { v: null, dur: 200 },
+                { v: V(1, 11), dur: 300 }, { v: V(2, 4), dur: 400 }, { v: V(2, 4), dur: 400 }, { v: null, dur: 200 },
+                { v: V(2, 4), dur: 300 }, { v: V(2, 6), dur: 300 }, { v: V(2, 7), dur: 300 }, { v: V(2, 9), dur: 300 },
+                { v: V(2, 7), dur: 300 }, { v: V(2, 6), dur: 600 }, { v: null, dur: 400 },
+
+                { v: V(1, 11), dur: 300 }, { v: V(2, 4), dur: 400 }, { v: V(2, 4), dur: 400 }, { v: null, dur: 200 },
+                { v: V(1, 11), dur: 300 }, { v: V(2, 4), dur: 400 }, { v: V(2, 4), dur: 400 }, { v: null, dur: 200 },
+                { v: V(2, 4), dur: 300 }, { v: V(2, 6), dur: 300 }, { v: V(2, 7), dur: 300 }, { v: V(2, 9), dur: 300 },
+                { v: V(2, 7), dur: 300 }, { v: V(2, 6), dur: 800 }, { v: null, dur: 400 }
+            ];
+            playMelodyMacro('sawtooth', melody); 
+        });
+
+        document.getElementById('bolt-br').addEventListener('click', () => {
+            // Yesterday
+            const melody = [
+                { v: V(2, 7), dur: 400 },  { v: V(2, 5), dur: 400 },  { v: V(2, 5), dur: 1200 }, { v: null,    dur: 300 },  
+                { v: V(2, 9), dur: 300 },  { v: V(2, 11),dur: 300 },  { v: V(3, 1), dur: 300 },  { v: V(3, 2), dur: 300 },  
+                { v: V(3, 4), dur: 300 },  { v: V(3, 5), dur: 300 },  { v: V(3, 4), dur: 300 },  { v: V(3, 2), dur: 300 },  
+                { v: V(3, 2), dur: 1200 }, { v: null,    dur: 300 },  { v: V(3, 2), dur: 300 },  { v: V(3, 0), dur: 300 },  
+                { v: V(2, 10),dur: 300 },  { v: V(2, 9), dur: 300 },  { v: V(2, 7), dur: 300 },  { v: V(2, 10),dur: 300 },  
+                { v: V(2, 9), dur: 300 },  { v: V(2, 9), dur: 900 },  { v: null,    dur: 200 },  { v: V(2, 7), dur: 300 },  
+                { v: V(2, 5), dur: 300 },  { v: V(2, 9), dur: 300 },  { v: V(2, 7), dur: 300 },  { v: V(2, 2), dur: 300 },  
+                { v: V(2, 5), dur: 300 },  { v: V(2, 9), dur: 300 },  { v: V(2, 9), dur: 1200 }, { v: null,    dur: 500 },
+                
+                { v: V(2, 9), dur: 400 },  { v: V(2, 9), dur: 400 },  { v: V(3, 2), dur: 300 },  { v: V(3, 4), dur: 300 },  
+                { v: V(3, 5), dur: 400 },  { v: V(3, 4), dur: 400 },  { v: V(3, 2), dur: 300 },  { v: V(3, 4), dur: 300 },  
+                { v: V(3, 2), dur: 600 },  { v: V(3, 0), dur: 300 },  { v: V(2, 9), dur: 600 },  { v: null,    dur: 400 },
+                { v: V(2, 9), dur: 400 },  { v: V(2, 9), dur: 400 },  { v: V(3, 2), dur: 300 },  { v: V(3, 4), dur: 300 },  
+                { v: V(3, 5), dur: 400 },  { v: V(3, 4), dur: 400 },  { v: V(3, 2), dur: 300 },  { v: V(3, 4), dur: 300 },  
+                { v: V(3, 2), dur: 600 },  { v: V(3, 0), dur: 300 },  { v: V(2, 9), dur: 1200 }   
+            ];
+            playMelodyMacro('triangle', melody);
+        });
         
         updateKnobPosition(0);
     </script>
