@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<!-- 
+    RP-25 Radial Pitch Mapper (Tuning Edition)
+    Created & Developed by Jose Velazquez MA
+    Voltage & Wave (https://voltageandwave.co.uk/)
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RP-25 Radial Pitch Mapper</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0d0f12; color: #1a1e24; font-family: monospace; text-transform: uppercase; padding: 1rem; user-select: none; -webkit-tap-highlight-color: transparent; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        
+        .synth-enclosure { position: relative; display: flex; align-items: stretch; border-radius: 10px; box-shadow: 0 25px 60px rgba(0,0,0,0.95), 0 0 40px rgba(0,0,0,0.8); width: 100%; max-width: 600px; }
+
+        .wooden-ear { width: 26px; background: linear-gradient(90deg, #2b150c 0%, #522815 30%, #3a1b0d 70%, #1c0b05 100%); border-top: 2px solid #733c1d; border-bottom: 3px solid #0f0502; box-shadow: inset 0 2px 4px rgba(255,255,255,0.15), inset 0 -2px 6px rgba(0,0,0,0.9); flex-shrink: 0; }
+        .wooden-ear-left { border-top-left-radius: 10px; border-bottom-left-radius: 10px; border-right: 2px solid #111; }
+        .wooden-ear-right { border-top-right-radius: 10px; border-bottom-right-radius: 10px; border-left: 2px solid #111; }
+
+        .chassis { background: radial-gradient(circle at 50% 20%, #f0ebd8 0%, #e2dbc8 60%, #cebba8 100%); border-top: 3px solid #f7f4e9; border-bottom: 4px solid #82796e; padding: 32px; flex-grow: 1; position: relative; display: flex; flex-direction: column; align-items: center; box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.8), inset 0 -2px 5px rgba(0,0,0,0.3); }
+
+        .rack-bolt { width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #a39c8e 0%, #3a362f 80%); border: 1px solid #1a1815; box-shadow: inset 0 1px 1px rgba(255,255,255,0.6), 0 2px 4px rgba(0,0,0,0.3); position: absolute; }
+        .bolt-tl { top: 12px; left: 12px; } .bolt-tr { top: 12px; right: 12px; } .bolt-bl { bottom: 12px; left: 12px; } .bolt-br { bottom: 12px; right: 12px; }
+
+        .crt-screen { background: #041004; border: 4px solid #2a2722; border-radius: 8px; box-shadow: inset 0 0 20px rgba(0, 255, 0, 0.25), inset 0 0 12px #000, 0 3px 6px rgba(0,0,0,0.4); position: relative; overflow: hidden; box-sizing: border-box; width: 100%; max-width: 320px; height: 80px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; }
+        .crt-screen::before { content: " "; position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03)); z-index: 5; background-size: 100% 3px, 6px 100%; pointer-events: none; }
+        .crt-text { color: #0f0; font-family: monospace; font-size: 16px; font-weight: bold; text-shadow: 0 0 5px #0f0; z-index: 10; text-align: center; line-height: 1.4; }
+
+        .tactile-button { background: linear-gradient(180deg, #33363d 0%, #191a1e 100%); border: 2px solid #000; color: #f0ebd8; box-shadow: 0 2px 0 #000, 0 3px 5px rgba(0,0,0,0.3); transition: all 0.08s ease; cursor: pointer; outline: none; }
+        .tactile-button:active { transform: translateY(1px); box-shadow: 0 1px 0 #000; }
+        .tactile-button.active-toggle { background: linear-gradient(180deg, #c83a2a 0%, #801f13 100%); border-color: #ff8878; color: #fff; box-shadow: 0 2px 0 #000, 0 0 10px rgba(200, 58, 42, 0.8); }
+
+        .radial-container { position: relative; width: 340px; height: 340px; display: flex; align-items: center; justify-content: center; margin-top: 1rem; }
+
+        .knob { width: 100px; height: 100px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #2d3036 0%, #15171a 70%, #050608 100%); border: 3px solid #000; cursor: ns-resize; position: relative; z-index: 20; box-shadow: inset 0 2px 4px rgba(255,255,255,0.2), 0 8px 15px rgba(0,0,0,0.5); transform: rotate(-135deg); touch-action: none; }
+        .knob::after { content: ''; position: absolute; top: 8px; left: 45px; width: 4px; height: 24px; background: #fff; border-radius: 2px; box-shadow: 0 0 4px rgba(255,255,255,0.9); }
+
+        .radial-key { position: absolute; width: 40px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.4); transform-origin: center; transition: all 0.1s ease; cursor: pointer; }
+        
+        .key-white { background: linear-gradient(180deg, #ffffff 0%, #d8d3c5 100%); color: #111; border: 2px solid #111; }
+        .key-black { background: linear-gradient(180deg, #333 0%, #111 100%); color: #aaa; border: 2px solid #000; z-index: 5; }
+        
+        .active-key.key-white { background: #c83a2a; color: #fff; border-color: #fff; box-shadow: 0 0 15px #c83a2a, inset 0 0 5px rgba(255,255,255,0.5); transform: scale(1.1); z-index: 15; }
+        .active-key.key-black { background: #c83a2a; color: #fff; border-color: #fff; box-shadow: 0 0 15px #c83a2a, inset 0 0 5px rgba(255,255,255,0.5); transform: scale(1.1); z-index: 15; }
+
+        .panel-outline { border: 1.5px solid #38342e; border-radius: 6px; background: rgba(0, 0, 0, 0.025); box-shadow: inset 0 1px 2px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.7); padding: 2rem; display: flex; flex-direction: column; align-items: center; }
+
+    </style>
+</head>
+<body>
+    <div class="synth-enclosure">
+        <div class="wooden-ear wooden-ear-left"></div>
+
+        <div class="chassis">
+            <div class="rack-bolt bolt-tl"></div><div class="rack-bolt bolt-tr"></div>
+            <div class="rack-bolt bolt-bl"></div><div class="rack-bolt bolt-br"></div>
+            
+            <div class="flex items-center justify-between w-full mb-4 px-2">
+                <div class="text-[10px] font-black text-[#1f1a14] tracking-widest border-b-2 border-[#38342e]/30 pb-1">VOLTAGE & WAVE • RP-25 RADIAL PITCH MAPPER</div>
+            </div>
+
+            <div class="panel-outline w-full">
+                <!-- DISPLAY -->
+                <div class="crt-screen">
+                    <div class="crt-text">
+                        <div id="dispNote">NOTE: --</div>
+                        <div id="dispFreq" class="text-[12px] opacity-80 mt-1">FREQ: 0.00 Hz</div>
+                    </div>
+                </div>
+
+                <!-- TUNING CONTROLS -->
+                <div class="flex gap-4 w-full max-w-[320px] justify-between items-center border-b border-[#38342e]/20 pb-4">
+                    <button id="btnHold" class="tactile-button px-3 py-1.5 rounded text-[10px] font-bold w-[75px]">HOLD: OFF</button>
+                    <button id="btnWave" class="tactile-button px-3 py-1.5 rounded text-[10px] font-bold w-[75px]">WAVE: SAW</button>
+                    <div class="flex items-center gap-1 bg-[#38342e]/10 p-1 rounded border border-[#38342e]/30">
+                        <button id="btnOctDown" class="tactile-button px-2 py-0.5 rounded text-[12px] font-bold">-</button>
+                        <div id="dispOct" class="text-[9px] font-bold text-[#5a544a] w-10 text-center">OCT 0</div>
+                        <button id="btnOctUp" class="tactile-button px-2 py-0.5 rounded text-[12px] font-bold">+</button>
+                    </div>
+                </div>
+
+                <!-- RADIAL KEYBOARD -->
+                <div class="radial-container" id="radialContainer">
+                    <div class="knob" id="mainKnob"></div>
+                </div>
+                
+                <div class="mt-8 flex flex-col items-center gap-3 w-full">
+                    <span class="text-[9px] font-bold text-[#5a544a] text-center tracking-widest">
+                        DRAG KNOB OR CLICK KEYS DIRECTLY TO TUNE
+                    </span>
+                    <div class="text-[9px] text-[#38342e] font-mono font-bold tracking-widest text-center w-full border-t border-[#38342e]/30 pt-3">
+                        &copy; JOSE VELAZQUEZ MA / <a href="https://voltageandwave.co.uk/" target="_blank" rel="noopener noreferrer" class="hover:text-[#c83a2a] underline transition-colors">VOLTAGE &amp; WAVE</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="wooden-ear wooden-ear-right"></div>
+    </div>
+
+    <script>
+        const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const totalNotes = 25; // 2 Octaves inclusive
+        const radius = 145; 
+        const arcSweep = 270;
+        const startAngle = -135; 
+
+        // Audio & State
+        let audioCtx, osc, vcf, vca;
+        let currentNoteIndex = -1;
+        let isHold = false;
+        let waveType = 'sawtooth';
+        let octaveOffset = 0; // 0 = C2 base
+
+        const radialContainer = document.getElementById('radialContainer');
+        const mainKnob = document.getElementById('mainKnob');
+        const dispNote = document.getElementById('dispNote');
+        const dispFreq = document.getElementById('dispFreq');
+        const dispOct = document.getElementById('dispOct');
+        
+        const btnHold = document.getElementById('btnHold');
+        const btnWave = document.getElementById('btnWave');
+        const btnOctDown = document.getElementById('btnOctDown');
+        const btnOctUp = document.getElementById('btnOctUp');
+
+        const keys = [];
+
+        // Generate radial keys
+        for (let i = 0; i < totalNotes; i++) {
+            const angleDeg = startAngle + (i / (totalNotes - 1)) * arcSweep;
+            const angleRad = (angleDeg - 90) * (Math.PI / 180); 
+            
+            const x = Math.cos(angleRad) * radius;
+            const y = Math.sin(angleRad) * radius;
+            
+            const noteChar = noteNames[i % 12];
+            const isBlack = noteChar.includes('#');
+
+            const keyEl = document.createElement('div');
+            keyEl.className = `radial-key ${isBlack ? 'key-black' : 'key-white'}`;
+            keyEl.dataset.index = i;
+            keyEl.style.transform = `translate(${x}px, ${y}px) rotate(${angleDeg}deg)`;
+            
+            // Interaction for direct key clicks
+            keyEl.addEventListener('pointerdown', async (e) => {
+                await initAudio();
+                const noteIndex = parseInt(e.currentTarget.dataset.index);
+                updateKnobPosition(noteIndex);
+                triggerNote(noteIndex);
+                // Temporarily flag activeDrag so release logic fires on pointer up (if Hold is off)
+                activeDrag = true; 
+            });
+
+            radialContainer.appendChild(keyEl);
+            keys.push(keyEl);
+        }
+
+        function updateKeyLabels() {
+            keys.forEach((keyEl, i) => {
+                const octave = 2 + octaveOffset + Math.floor(i / 12);
+                const noteChar = noteNames[i % 12];
+                keyEl.innerText = `${noteChar}${octave}`;
+            });
+        }
+        updateKeyLabels(); // Initial population
+
+        async function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                osc = audioCtx.createOscillator();
+                vcf = audioCtx.createBiquadFilter();
+                vca = audioCtx.createGain();
+                
+                osc.type = waveType;
+                vcf.type = 'lowpass';
+                vcf.Q.value = 1.5;
+                vca.gain.value = 0.0001;
+                
+                osc.connect(vcf);
+                vcf.connect(vca);
+                vca.connect(audioCtx.destination);
+                
+                osc.start();
+            }
+            if (audioCtx.state === 'suspended') await audioCtx.resume();
+        }
+
+        function triggerNote(noteIndex) {
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            
+            // Calculate actual pitch including octave shift
+            const totalSemitones = noteIndex + (octaveOffset * 12);
+            const freq = 65.41 * Math.pow(2, totalSemitones / 12); // Base C2
+            
+            osc.frequency.setTargetAtTime(freq, now, 0.01);
+            
+            // Filter Envelope: Keep more open for Triangle, slightly closed for Saw to smooth it
+            const targetFilter = waveType === 'sawtooth' ? 4000 : 20000;
+            vcf.frequency.cancelScheduledValues(now);
+            vcf.frequency.setValueAtTime(vcf.frequency.value || 400, now);
+            vcf.frequency.linearRampToValueAtTime(targetFilter, now + 0.02);
+
+            // Amp Envelope
+            vca.gain.cancelScheduledValues(now);
+            vca.gain.setValueAtTime(vca.gain.value || 0.0001, now);
+            vca.gain.linearRampToValueAtTime(0.5, now + 0.02);
+
+            // Update UI
+            const noteChar = noteNames[noteIndex % 12];
+            const octave = 2 + octaveOffset + Math.floor(noteIndex / 12);
+            dispNote.innerText = `NOTE: ${noteChar}${octave}`;
+            dispFreq.innerText = `FREQ: ${freq.toFixed(2)} Hz`;
+
+            keys.forEach((k, idx) => {
+                if (idx === noteIndex) k.classList.add('active-key');
+                else k.classList.remove('active-key');
+            });
+        }
+
+        function releaseNote() {
+            // If HOLD is active, skip the release envelope entirely (drone mode)
+            if (isHold || !audioCtx || !vca) return;
+            
+            const now = audioCtx.currentTime;
+            vca.gain.cancelScheduledValues(now);
+            vca.gain.setValueAtTime(vca.gain.value, now);
+            vca.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
+            
+            keys.forEach(k => k.classList.remove('active-key'));
+            currentNoteIndex = -1;
+        }
+
+        function updateKnobPosition(noteIndex) {
+            currentVal = noteIndex;
+            currentNoteIndex = noteIndex;
+            const angle = startAngle + (currentVal / (totalNotes - 1)) * arcSweep;
+            mainKnob.style.transform = `rotate(${angle}deg)`;
+        }
+
+        // UI Control Listeners
+        btnHold.addEventListener('click', () => {
+            isHold = !isHold;
+            if (isHold) {
+                btnHold.classList.add('active-toggle');
+                btnHold.innerText = 'HOLD: ON';
+                // If a note is already playing, it will now sustain
+            } else {
+                btnHold.classList.remove('active-toggle');
+                btnHold.innerText = 'HOLD: OFF';
+                if (!activeDrag) releaseNote(); // Kill drone if we aren't currently dragging
+            }
+        });
+
+        btnWave.addEventListener('click', () => {
+            if (waveType === 'sawtooth') {
+                waveType = 'triangle'; // Triangle is better than pure sine for tuning hardware (has odd harmonics)
+                btnWave.innerText = 'WAVE: TRI';
+            } else {
+                waveType = 'sawtooth';
+                btnWave.innerText = 'WAVE: SAW';
+            }
+            if (osc) osc.type = waveType;
+            if (currentNoteIndex !== -1) triggerNote(currentNoteIndex); // refresh filter
+        });
+
+        function changeOctave(dir) {
+            octaveOffset += dir;
+            // Limit octave shift -2 to +3
+            octaveOffset = Math.max(-2, Math.min(3, octaveOffset)); 
+            
+            dispOct.innerText = `OCT ${octaveOffset > 0 ? '+' : ''}${octaveOffset}`;
+            updateKeyLabels();
+            
+            if (currentNoteIndex !== -1 && isHold) {
+                triggerNote(currentNoteIndex); // Instantly jump pitch if droning
+            }
+        }
+
+        btnOctDown.addEventListener('click', () => changeOctave(-1));
+        btnOctUp.addEventListener('click', () => changeOctave(1));
+
+        // Knob Drag Logic
+        let activeDrag = false;
+        let startY = 0;
+        let currentVal = 0;
+
+        mainKnob.addEventListener('pointerdown', async (e) => {
+            await initAudio();
+            activeDrag = true;
+            mainKnob.setPointerCapture(e.pointerId);
+            startY = e.clientY;
+            
+            const snappedNote = Math.round(currentVal);
+            currentNoteIndex = snappedNote;
+            triggerNote(snappedNote);
+        });
+
+        document.addEventListener('pointermove', (e) => {
+            if (!activeDrag) return;
+            
+            const deltaY = startY - e.clientY;
+            startY = e.clientY;
+            
+            currentVal = Math.max(0, Math.min(totalNotes - 1, currentVal + (deltaY * 0.15)));
+            
+            const angle = startAngle + (currentVal / (totalNotes - 1)) * arcSweep;
+            mainKnob.style.transform = `rotate(${angle}deg)`;
+
+            const snappedNote = Math.round(currentVal);
+            if (snappedNote !== currentNoteIndex) {
+                currentNoteIndex = snappedNote;
+                triggerNote(currentNoteIndex);
+            }
+        });
+
+        const endDrag = (e) => {
+            if (activeDrag) {
+                activeDrag = false;
+                try { mainKnob.releasePointerCapture(e.pointerId); } catch(err){}
+                releaseNote();
+            }
+        };
+
+        document.addEventListener('pointerup', endDrag);
+        document.addEventListener('pointercancel', endDrag);
+    </script>
+</body>
+</html>
