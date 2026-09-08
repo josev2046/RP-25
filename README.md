@@ -1,7 +1,5 @@
 # RP-25 Radial Pitch Mapper
 
----
-
 ## 1. What this is
 
 The RP-25 is a browser-based reference tone generator. It exists to give you a stable, precisely-tuned pitch that you can compare by ear against an unquantised analogue sequencer or synthesiser oscillator, so you can tune the hardware to match.
