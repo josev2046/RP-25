@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<!-- 
+    RP-25 Radial Pitch Mapper (SQ-10 Continuous + Creative Edition)
+    Created & Developed by Jose Velazquez MA
+    Voltage & Wave (https://voltageandwave.co.uk/)
+    -- Patched: Added Ambient FX (Delay/Reverb) and Performative Automation Macros --
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RP-25 Radial Pitch Mapper</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0d0f12; color: #1a1e24; font-family: monospace; text-transform: uppercase; padding: 1rem; user-select: none; -webkit-tap-highlight-color: transparent; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        
+        .synth-enclosure { position: relative; display: flex; align-items: stretch; border-radius: 10px; box-shadow: 0 25px 60px rgba(0,0,0,0.95), 0 0 40px rgba(0,0,0,0.8); width: 100%; max-width: 600px; }
+
+        .wooden-ear { width: 26px; background: linear-gradient(90deg, #2b150c 0%, #522815 30%, #3a1b0d 70%, #1c0b05 100%); border-top: 2px solid #733c1d; border-bottom: 3px solid #0f0502; box-shadow: inset 0 2px 4px rgba(255,255,255,0.15), inset 0 -2px 6px rgba(0,0,0,0.9); flex-shrink: 0; }
+        .wooden-ear-left { border-top-left-radius: 10px; border-bottom-left-radius: 10px; border-right: 2px solid #111; }
+        .wooden-ear-right { border-top-right-radius: 10px; border-bottom-right-radius: 10px; border-left: 2px solid #111; }
+
+        .chassis { background: radial-gradient(circle at 50% 20%, #f0ebd8 0%, #e2dbc8 60%, #cebba8 100%); border-top: 3px solid #f7f4e9; border-bottom: 4px solid #82796e; padding: 32px; flex-grow: 1; position: relative; display: flex; flex-direction: column; align-items: center; box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.8), inset 0 -2px 5px rgba(0,0,0,0.3); }
+
+        .rack-bolt { width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #a39c8e 0%, #3a362f 80%); border: 1px solid #1a1815; box-shadow: inset 0 1px 1px rgba(255,255,255,0.6), 0 2px 4px rgba(0,0,0,0.3); position: absolute; }
+        .bolt-tl { top: 12px; left: 12px; } .bolt-tr { top: 12px; right: 12px; } .bolt-bl { bottom: 12px; left: 12px; } .bolt-br { bottom: 12px; right: 12px; }
+
+        .crt-screen { background: #041004; border: 4px solid #2a2722; border-radius: 8px; box-shadow: inset 0 0 20px rgba(0, 255, 0, 0.25), inset 0 0 12px #000, 0 3px 6px rgba(0,0,0,0.4); position: relative; overflow: hidden; box-sizing: border-box; width: 100%; max-width: 320px; height: 96px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; margin-bottom: 1rem; }
+        .crt-screen::before { content: " "; position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03)); z-index: 5; background-size: 100% 3px, 6px 100%; pointer-events: none; }
+        .crt-text { color: #0f0; font-family: monospace; font-size: 14px; font-weight: bold; text-shadow: 0 0 5px #0f0; z-index: 10; text-align: right; line-height: 1.3; }
+
+        .tactile-button { background: linear-gradient(180deg, #33363d 0%, #191a1e 100%); border: 2px solid #000; color: #f0ebd8; box-shadow: 0 2px 0 #000, 0 3px 5px rgba(0,0,0,0.3); transition: all 0.08s ease; cursor: pointer; outline: none; }
+        .tactile-button:active { transform: translateY(1px); box-shadow: 0 1px 0 #000; }
+        .tactile-button.active-toggle { background: linear-gradient(180deg, #c83a2a 0%, #801f13 100%); border-color: #ff8878; color: #fff; box-shadow: 0 2px 0 #000, 0 0 10px rgba(200, 58, 42, 0.8); }
+
+        .radial-container { position: relative; width: 340px; height: 340px; display: flex; align-items: center; justify-content: center; margin-top: 1rem; }
+
+        .knob { width: 100px; height: 100px; border-radius: 50%; background: repeating-conic-gradient(from 0deg, #0a0b0c 0deg 4deg, #22252a 4deg 8deg); border: 2px solid #000; cursor: ns-resize; position: relative; z-index: 30; box-shadow: 0 8px 15px rgba(0,0,0,0.6); transform: rotate(-135deg); touch-action: none; }
+        .knob::before { content: ''; position: absolute; top: 12px; left: 12px; right: 12px; bottom: 12px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #2d3036 0%, #15171a 70%, #050608 100%); box-shadow: inset 0 2px 4px rgba(255,255,255,0.1), 0 3px 6px rgba(0,0,0,0.9); }
+        .knob::after { content: ''; position: absolute; top: 2px; left: 47px; width: 6px; height: 35px; background: #fff; border-radius: 1px; box-shadow: 0 0 3px rgba(255,255,255,0.6); z-index: 2; }
+
+        .radial-key { position: absolute; display: flex; align-items: center; justify-content: center; font-weight: bold; transform-origin: center; transition: all 0.1s ease; cursor: pointer; touch-action: none; }
+        .key-c { background: linear-gradient(180deg, #ffffff 0%, #d8d3c5 100%); color: #111; border: 2px solid #111; width: 34px; height: 20px; border-radius: 4px; z-index: 10; font-size: 9px; box-shadow: 0 4px 6px rgba(0,0,0,0.4); }
+        .mini-white { background: #d8d3c5; border: 1px solid #111; width: 3px; height: 16px; border-radius: 1px; z-index: 8; }
+        .mini-black { background: #111; border: 1px solid #000; width: 3px; height: 10px; border-radius: 1px; z-index: 5; }
+
+        .active-key.key-c { background: #c83a2a; color: #fff; border-color: #fff; box-shadow: 0 0 15px #c83a2a, inset 0 0 5px rgba(255,255,255,0.5); transform: scale(1.1); z-index: 25; }
+        .active-key.mini-white, .active-key.mini-black { background: #ff4444; border-color: #ffaaaa; box-shadow: 0 0 10px #ff4444; z-index: 25; }
+
+        .panel-outline { border: 1.5px solid #38342e; border-radius: 6px; background: rgba(0, 0, 0, 0.025); box-shadow: inset 0 1px 2px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.7); padding: 2rem; display: flex; flex-direction: column; align-items: center; margin-bottom: 1rem; }
+        .fine-row { display: flex; align-items: center; gap: 1px; background: rgba(56,52,46,0.1); padding: 4px; border-radius: 4px; border: 1px solid rgba(56,52,46,0.3); }
+        .vol-slider { -webkit-appearance: none; appearance: none; width: 120px; height: 4px; border-radius: 2px; background: #82796e; outline: none; }
+        .vol-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #191a1e; border: 2px solid #000; cursor: pointer; box-shadow: 0 2px 3px rgba(0,0,0,0.4); }
+
+    </style>
+</head>
+<body>
+    <div class="synth-enclosure">
+        <div class="wooden-ear wooden-ear-left"></div>
+
+        <div class="chassis">
+            <div class="rack-bolt bolt-tl"></div><div class="rack-bolt bolt-tr"></div>
+            <div class="rack-bolt bolt-bl"></div><div class="rack-bolt bolt-br"></div>
+            
+            <div class="flex items-center justify-between w-full mb-4 px-2">
+                <div class="text-[10px] font-black text-[#1f1a14] tracking-widest border-b-2 border-[#38342e]/30 pb-1">VOLTAGE & WAVE • SQ-10 CONTINUOUS TUNER</div>
+            </div>
+
+            <div class="panel-outline w-full">
+                <!-- DISPLAY W/ SCOPE -->
+                <div class="crt-screen">
+                    <div class="flex-shrink-0 flex items-center justify-center z-10">
+                        <canvas id="scopeCanvas" width="130" height="50" class="border border-[#111] rounded-sm bg-[#041004]/50"></canvas>
+                    </div>
+                    <div class="border-l border-[#0f0]/30 h-[70px] mx-3 z-10"></div>
+                    <div class="crt-text flex-1 flex flex-col justify-center">
+                        <div id="dispVolt" class="text-[12px] opacity-90 mb-0.5">VOLT: -5.00V</div>
+                        <div id="dispNote" class="whitespace-nowrap text-[14px]">NOTE: C-3</div>
+                        <div id="dispFreq" class="text-[11px] opacity-80 mt-1">FREQ: 2.04 Hz</div>
+                        <div id="dispFine" class="text-[9px] opacity-70 mt-1">FINE: +0&cent;</div>
+                    </div>
+                </div>
+
+                <!-- TUNING CONTROLS -->
+                <div class="flex gap-4 w-full max-w-[320px] justify-between items-center border-b border-[#38342e]/20 pb-4">
+                    <button id="btnHold" class="tactile-button px-3 py-1.5 rounded text-[10px] font-bold w-[75px]">HOLD: OFF</button>
+                    <button id="btnWave" class="tactile-button px-3 py-1.5 rounded text-[10px] font-bold w-[75px]">WAVE: SAW</button>
+                    <div class="flex items-center gap-1 bg-[#38342e]/10 p-1 rounded border border-[#38342e]/30">
+                        <button id="btnOctDown" class="tactile-button px-2 py-0.5 rounded text-[12px] font-bold">-</button>
+                        <div id="dispOct" class="text-[9px] font-bold text-[#5a544a] w-10 text-center">OCT 0</div>
+                        <button id="btnOctUp" class="tactile-button px-2 py-0.5 rounded text-[12px] font-bold">+</button>
+                    </div>
+                </div>
+
+                <!-- FINE TUNE + VOLUME -->
+                <div class="flex gap-3 w-full max-w-[320px] justify-between items-center pt-3 pb-1">
+                    <div class="fine-row">
+                        <button id="btnFineDown" class="tactile-button px-2 py-0.5 rounded text-[12px] font-bold">-</button>
+                        <div class="text-[9px] font-bold text-[#5a544a] w-14 text-center">FINE ¢</div>
+                        <button id="btnFineUp" class="tactile-button px-2 py-0.5 rounded text-[12px] font-bold">+</button>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[9px] font-bold text-[#5a544a]">VOL</span>
+                        <input type="range" id="volSlider" class="vol-slider" min="0" max="1" step="0.01" value="0.5">
+                    </div>
+                </div>
+
+                <!-- RADIAL VOLTAGE MAP -->
+                <div class="radial-container" id="radialContainer">
+                    <div class="knob" id="mainKnob"></div>
+                </div>
+            </div>
+
+            <!-- CREATIVE FX & MACROS -->
+            <div class="w-full border-t border-[#38342e]/30 pt-4 flex flex-col items-center gap-3">
+                <span class="text-[9px] font-bold text-[#5a544a] tracking-widest mb-1">CREATIVE POTENTIAL / FX MACROS</span>
+                <div class="flex gap-3 flex-wrap justify-center w-full">
+                    <button id="btnDelay" class="tactile-button px-3 py-1.5 rounded text-[9px] font-bold tracking-wider">DELAY</button>
+                    <button id="btnReverb" class="tactile-button px-3 py-1.5 rounded text-[9px] font-bold tracking-wider">REVERB</button>
+                    <div class="border-l border-[#38342e]/30 h-[24px]"></div>
+                    <button id="btnTheremin" class="tactile-button px-3 py-1.5 rounded text-[9px] font-bold tracking-wider">THEREMIN</button>
+                    <button id="btnLaser" class="tactile-button px-3 py-1.5 rounded text-[9px] font-bold tracking-wider">LASER DROP</button>
+                    <button id="btnRiser" class="tactile-button px-3 py-1.5 rounded text-[9px] font-bold tracking-wider">TENSION RISER</button>
+                </div>
+                <div class="text-[9px] text-[#38342e] font-mono font-bold tracking-widest text-center w-full mt-4">
+                    &copy; JOSE VELAZQUEZ MA / <a href="https://voltageandwave.co.uk/" target="_blank" rel="noopener noreferrer" class="hover:text-[#c83a2a] underline transition-colors">VOLTAGE &amp; WAVE</a>
+                </div>
+            </div>
+            
+        </div>
+        <div class="wooden-ear wooden-ear-right"></div>
+    </div>
+
+    <script>
+        const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const totalSemitones = 120; // 10 Octaves (-5V to +5V)
+        const arcSweep = 270;
+        const startAngle = -135; 
+
+        // Audio & State
+        let audioCtx, osc, vcf, vca, masterGain, analyser;
+        // FX Nodes
+        let delayNode, feedbackGain, reverbNode, dryGain, delayOutGain, reverbOutGain;
+        
+        let isHold = false;
+        let waveType = 'sawtooth'; 
+        let octaveOffset = 0; 
+        let fineCents = 0; 
+        let masterVolume = 0.5;
+        let isDelayActive = false;
+        let isReverbActive = false;
+        let isMacroRunning = false;
+
+        let currentVoltage = -5.0;
+
+        const radialContainer = document.getElementById('radialContainer');
+        const mainKnob = document.getElementById('mainKnob');
+        const dispVolt = document.getElementById('dispVolt');
+        const dispNote = document.getElementById('dispNote');
+        const dispFreq = document.getElementById('dispFreq');
+        const dispFine = document.getElementById('dispFine');
+        const dispOct = document.getElementById('dispOct');
+        
+        const btnHold = document.getElementById('btnHold');
+        const btnWave = document.getElementById('btnWave');
+        const btnOctDown = document.getElementById('btnOctDown');
+        const btnOctUp = document.getElementById('btnOctUp');
+        const btnFineDown = document.getElementById('btnFineDown');
+        const btnFineUp = document.getElementById('btnFineUp');
+        const volSlider = document.getElementById('volSlider');
+        
+        const btnDelay = document.getElementById('btnDelay');
+        const btnReverb = document.getElementById('btnReverb');
+        const btnTheremin = document.getElementById('btnTheremin');
+        const btnLaser = document.getElementById('btnLaser');
+        const btnRiser = document.getElementById('btnRiser');
+
+        const allKeys = [];
+
+        for (let i = 0; i <= totalSemitones; i++) {
+            const voltage = -5 + (i / 12);
+            const angleDeg = startAngle + (i / totalSemitones) * arcSweep;
+            const angleRad = (angleDeg - 90) * (Math.PI / 180); 
+            
+            const noteIndex = i % 12;
+            const isC = noteIndex === 0;
+            const noteChar = noteNames[noteIndex];
+            const isBlack = noteChar.includes('#');
+
+            const keyEl = document.createElement('div');
+            
+            if (isC) {
+                const r = 135; 
+                const x = Math.cos(angleRad) * r;
+                const y = Math.sin(angleRad) * r;
+                keyEl.className = 'radial-key key-c';
+                keyEl.dataset.voltage = voltage;
+                keyEl.style.transform = `translate(${x}px, ${y}px) rotate(${angleDeg}deg)`;
+            } else {
+                const r = isBlack ? 92 : 98; 
+                const x = Math.cos(angleRad) * r;
+                const y = Math.sin(angleRad) * r;
+                keyEl.className = `radial-key ${isBlack ? 'mini-black' : 'mini-white'}`;
+                keyEl.dataset.voltage = voltage;
+                keyEl.style.transform = `translate(${x}px, ${y}px) rotate(${angleDeg}deg)`;
+            }
+            
+            keyEl.addEventListener('pointerdown', async (e) => {
+                e.stopPropagation();
+                if(isMacroRunning) return;
+                await initAudio();
+                try { keyEl.setPointerCapture(e.pointerId); } catch (err) {}
+                
+                const targetVoltage = parseFloat(e.currentTarget.dataset.voltage);
+                updateKnobPosition(targetVoltage);
+                triggerEnvelope();
+            });
+
+            const releaseKey = (e) => {
+                if(isMacroRunning) return;
+                try { keyEl.releasePointerCapture(e.pointerId); } catch (err) {}
+                if (!isHold) releaseEnvelope();
+            };
+            keyEl.addEventListener('pointerup', releaseKey);
+            keyEl.addEventListener('pointercancel', releaseKey);
+
+            radialContainer.appendChild(keyEl);
+            allKeys.push(keyEl);
+        }
+
+        function updateKeyLabels() {
+            allKeys.forEach((keyEl) => {
+                if (keyEl.classList.contains('key-c')) {
+                    const v = parseFloat(keyEl.dataset.voltage);
+                    const octave = v + 2 + octaveOffset;
+                    keyEl.innerText = `C${octave}`;
+                }
+            });
+        }
+        updateKeyLabels(); 
+
+        // Generates a synthetic impulse response for the reverb convolver
+        function generateImpulseResponse() {
+            const sampleRate = audioCtx.sampleRate;
+            const length = sampleRate * 2.5; // 2.5 seconds
+            const impulse = audioCtx.createBuffer(2, length, sampleRate);
+            const left = impulse.getChannelData(0);
+            const right = impulse.getChannelData(1);
+            for (let i = 0; i < length; i++) {
+                const decay = Math.pow(1 - i / length, 3);
+                left[i] = (Math.random() * 2 - 1) * decay;
+                right[i] = (Math.random() * 2 - 1) * decay;
+            }
+            return impulse;
+        }
+
+        async function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                osc = audioCtx.createOscillator();
+                vcf = audioCtx.createBiquadFilter();
+                vca = audioCtx.createGain();
+                masterGain = audioCtx.createGain();
+                analyser = audioCtx.createAnalyser();
+                
+                osc.type = waveType;
+                vcf.type = 'lowpass';
+                vcf.Q.value = 1.5;
+                vca.gain.value = 0.0001;
+                masterGain.gain.value = masterVolume;
+                analyser.fftSize = 512;
+                
+                // FX Nodes
+                dryGain = audioCtx.createGain();
+                dryGain.gain.value = 1.0;
+                
+                delayNode = audioCtx.createDelay(2.0);
+                delayNode.delayTime.value = 0.35; // 350ms delay
+                feedbackGain = audioCtx.createGain();
+                feedbackGain.gain.value = 0.5; // 50% feedback
+                delayOutGain = audioCtx.createGain();
+                delayOutGain.gain.value = 0; // Off by default
+                
+                reverbNode = audioCtx.createConvolver();
+                reverbNode.buffer = generateImpulseResponse();
+                reverbOutGain = audioCtx.createGain();
+                reverbOutGain.gain.value = 0; // Off by default
+
+                // Routing
+                osc.connect(vcf);
+                vcf.connect(vca);
+                
+                // VCA splits to Dry, Delay, and Reverb
+                vca.connect(dryGain);
+                vca.connect(delayNode);
+                vca.connect(reverbNode);
+
+                // Delay Feedback Loop
+                delayNode.connect(feedbackGain);
+                feedbackGain.connect(delayNode);
+                
+                // FX Returns
+                delayNode.connect(delayOutGain);
+                reverbNode.connect(reverbOutGain);
+                
+                dryGain.connect(masterGain);
+                delayOutGain.connect(masterGain);
+                reverbOutGain.connect(masterGain);
+
+                masterGain.connect(analyser);
+                analyser.connect(audioCtx.destination);
+                
+                osc.start();
+                drawScope();
+            }
+            if (audioCtx.state === 'suspended') await audioCtx.resume();
+        }
+
+        function drawScope() {
+            requestAnimationFrame(drawScope);
+            if (!analyser) return;
+
+            const canvas = document.getElementById('scopeCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            analyser.getByteTimeDomainData(dataArray);
+
+            ctx.fillStyle = '#041004';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = '#0f0';
+            ctx.beginPath();
+
+            const sliceWidth = canvas.width * 1.0 / bufferLength;
+            let x = 0;
+
+            for (let i = 0; i < bufferLength; i++) {
+                const val = dataArray[i] / 128.0;
+                const y = val * canvas.height / 2;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+                x += sliceWidth;
+            }
+            ctx.lineTo(canvas.width, canvas.height / 2);
+            ctx.stroke();
+        }
+
+        function updatePitch(voltage, glideTime = 0.01) {
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            const semitonesFromC2 = voltage * 12;
+            const totalSemitones = semitonesFromC2 + (octaveOffset * 12);
+            const freq = 65.41 * Math.pow(2, totalSemitones / 12) * Math.pow(2, fineCents / 1200); 
+            
+            // Added glideTime parameter for macro sweeps
+            osc.frequency.setTargetAtTime(freq, now, glideTime);
+
+            const nearestSemitone = Math.round(semitonesFromC2);
+            const noteIndex = ((nearestSemitone % 12) + 12) % 12;
+            const noteChar = noteNames[noteIndex];
+            const octave = 2 + octaveOffset + Math.floor(nearestSemitone / 12);
+            
+            const detuneCents = Math.round((semitonesFromC2 - nearestSemitone) * 100);
+            let detuneStr = detuneCents > 0 ? ` +${detuneCents}¢` : (detuneCents < 0 ? ` ${detuneCents}¢` : '');
+
+            dispVolt.innerText = `VOLT: ${voltage >= 0 ? '+' : ''}${voltage.toFixed(2)}V`;
+            dispNote.innerText = `NOTE: ${noteChar}${octave}${detuneStr}`;
+            dispFreq.innerText = `FREQ: ${freq.toFixed(2)} Hz`;
+
+            const absoluteNoteIndex = nearestSemitone + 60; 
+            allKeys.forEach((k, idx) => {
+                if (idx === absoluteNoteIndex && detuneCents === 0) k.classList.add('active-key');
+                else k.classList.remove('active-key');
+            });
+        }
+
+        function triggerEnvelope() {
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            const filterByWave = { sawtooth: 4000, triangle: 8000, sine: 20000 };
+            const targetFilter = filterByWave[waveType] ?? 4000;
+            vcf.frequency.cancelScheduledValues(now);
+            vcf.frequency.setValueAtTime(vcf.frequency.value || 400, now);
+            vcf.frequency.linearRampToValueAtTime(targetFilter, now + 0.02);
+
+            vca.gain.cancelScheduledValues(now);
+            vca.gain.setValueAtTime(vca.gain.value || 0.0001, now);
+            vca.gain.linearRampToValueAtTime(0.5, now + 0.02);
+        }
+
+        function releaseEnvelope() {
+            if (isHold || !audioCtx || !vca) return;
+            const now = audioCtx.currentTime;
+            vca.gain.cancelScheduledValues(now);
+            vca.gain.setValueAtTime(vca.gain.value, now);
+            vca.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
+            allKeys.forEach(k => k.classList.remove('active-key'));
+        }
+
+        function updateKnobPosition(voltage, glide = 0.01) {
+            currentVoltage = voltage;
+            const angle = startAngle + ((currentVoltage + 5) / 10) * arcSweep;
+            mainKnob.style.transform = `rotate(${angle}deg)`;
+            updatePitch(currentVoltage, glide);
+        }
+
+        // --- Standard UI Listeners ---
+        function toggleHold(state) {
+            isHold = state;
+            if (isHold) {
+                btnHold.classList.add('active-toggle');
+                btnHold.innerText = 'HOLD: ON';
+            } else {
+                btnHold.classList.remove('active-toggle');
+                btnHold.innerText = 'HOLD: OFF';
+                if (!activeDrag && !isMacroRunning) releaseEnvelope();
+            }
+        }
+        btnHold.addEventListener('click', () => toggleHold(!isHold));
+
+        const waveCycle = ['sawtooth', 'triangle', 'sine'];
+        const waveLabels = { sawtooth: 'SAW', triangle: 'TRI', sine: 'SIN' };
+        function updateWaveUI() {
+            btnWave.innerText = `WAVE: ${waveLabels[waveType]}`;
+            if (osc) osc.type = waveType;
+        }
+        btnWave.addEventListener('click', () => {
+            if(isMacroRunning) return;
+            const nextIdx = (waveCycle.indexOf(waveType) + 1) % waveCycle.length;
+            waveType = waveCycle[nextIdx];
+            updateWaveUI();
+            if (isHold || activeDrag) triggerEnvelope(); 
+        });
+
+        // --- FX Listeners ---
+        function toggleDelay(state) {
+            isDelayActive = state;
+            if (isDelayActive) {
+                btnDelay.classList.add('active-toggle');
+                if(delayOutGain) delayOutGain.gain.setTargetAtTime(0.6, audioCtx.currentTime, 0.1);
+            } else {
+                btnDelay.classList.remove('active-toggle');
+                if(delayOutGain) delayOutGain.gain.setTargetAtTime(0.0, audioCtx.currentTime, 0.1);
+            }
+        }
+        btnDelay.addEventListener('click', async () => { await initAudio(); toggleDelay(!isDelayActive); });
+
+        function toggleReverb(state) {
+            isReverbActive = state;
+            if (isReverbActive) {
+                btnReverb.classList.add('active-toggle');
+                if(reverbOutGain) reverbOutGain.gain.setTargetAtTime(0.8, audioCtx.currentTime, 0.1);
+            } else {
+                btnReverb.classList.remove('active-toggle');
+                if(reverbOutGain) reverbOutGain.gain.setTargetAtTime(0.0, audioCtx.currentTime, 0.1);
+            }
+        }
+        btnReverb.addEventListener('click', async () => { await initAudio(); toggleReverb(!isReverbActive); });
+
+        // --- Macros ---
+        btnTheremin.addEventListener('click', async () => {
+            if(isMacroRunning) return;
+            await initAudio();
+            waveType = 'sine'; updateWaveUI();
+            toggleDelay(true); toggleReverb(true);
+            toggleHold(true);
+            updateKnobPosition(0);
+            triggerEnvelope();
+        });
+
+        btnLaser.addEventListener('click', async () => {
+            if(isMacroRunning) return;
+            await initAudio();
+            isMacroRunning = true;
+            waveType = 'sawtooth'; updateWaveUI();
+            toggleHold(true);
+            toggleDelay(true);
+            
+            let v = 4.0;
+            updateKnobPosition(v, 0.01);
+            triggerEnvelope();
+            
+            function dropStep() {
+                v -= 0.3; // Fast drop
+                if(v <= -5.0) {
+                    v = -5.0;
+                    updateKnobPosition(v, 0.05);
+                    toggleHold(false);
+                    isMacroRunning = false;
+                } else {
+                    updateKnobPosition(v, 0.05);
+                    requestAnimationFrame(dropStep);
+                }
+            }
+            // slight delay before dropping
+            setTimeout(() => requestAnimationFrame(dropStep), 50);
+        });
+
+        btnRiser.addEventListener('click', async () => {
+            if(isMacroRunning) return;
+            await initAudio();
+            isMacroRunning = true;
+            waveType = 'sawtooth'; updateWaveUI();
+            toggleDelay(true); toggleReverb(true);
+            toggleHold(true);
+            
+            let v = -4.0;
+            updateKnobPosition(v, 0.01);
+            triggerEnvelope();
+            
+            function riseStep() {
+                v += 0.012; // Slow rise
+                if(v >= 4.0) {
+                    v = 4.0;
+                    updateKnobPosition(v, 0.1);
+                    toggleHold(false);
+                    isMacroRunning = false;
+                } else {
+                    updateKnobPosition(v, 0.1);
+                    requestAnimationFrame(riseStep);
+                }
+            }
+            requestAnimationFrame(riseStep);
+        });
+
+        // --- Hardware Logic ---
+        function changeOctave(dir) {
+            octaveOffset += dir;
+            octaveOffset = Math.max(-2, Math.min(3, octaveOffset)); 
+            dispOct.innerText = `OCT ${octaveOffset > 0 ? '+' : ''}${octaveOffset}`;
+            updateKeyLabels();
+            if (activeDrag || isHold) updatePitch(currentVoltage); 
+        }
+        btnOctDown.addEventListener('click', () => changeOctave(-1));
+        btnOctUp.addEventListener('click', () => changeOctave(1));
+
+        function changeFine(deltaCents) {
+            fineCents = Math.max(-50, Math.min(50, fineCents + deltaCents));
+            dispFine.innerHTML = `FINE: ${fineCents > 0 ? '+' : ''}${fineCents}&cent;`;
+            if (activeDrag || isHold) updatePitch(currentVoltage); 
+        }
+        btnFineDown.addEventListener('click', () => changeFine(-1));
+        btnFineUp.addEventListener('click', () => changeFine(1));
+        
+        let fineHoldTimer = null;
+        function bindFineHold(btn, deltaCents) {
+            btn.addEventListener('pointerdown', () => { fineHoldTimer = setInterval(() => changeFine(deltaCents), 90); });
+            const stop = () => { if (fineHoldTimer) { clearInterval(fineHoldTimer); fineHoldTimer = null; } };
+            btn.addEventListener('pointerup', stop); btn.addEventListener('pointerleave', stop); btn.addEventListener('pointercancel', stop);
+        }
+        bindFineHold(btnFineDown, -1); bindFineHold(btnFineUp, 1);
+
+        volSlider.addEventListener('input', (e) => {
+            masterVolume = parseFloat(e.target.value);
+            if (masterGain) masterGain.gain.setTargetAtTime(masterVolume, audioCtx.currentTime, 0.01);
+        });
+
+        // --- Continuous Drag Logic ---
+        let activeDrag = false;
+        let startY = 0;
+
+        mainKnob.addEventListener('pointerdown', async (e) => {
+            if(isMacroRunning) return;
+            await initAudio();
+            activeDrag = true;
+            mainKnob.setPointerCapture(e.pointerId);
+            startY = e.clientY;
+            
+            updatePitch(currentVoltage);
+            triggerEnvelope();
+        });
+
+        document.addEventListener('pointermove', (e) => {
+            if (!activeDrag || isMacroRunning) return;
+            
+            const deltaY = startY - e.clientY;
+            startY = e.clientY;
+            
+            currentVoltage = Math.max(-5.0, Math.min(5.0, currentVoltage + (deltaY * 0.015)));
+            const angle = startAngle + ((currentVoltage + 5) / 10) * arcSweep;
+            mainKnob.style.transform = `rotate(${angle}deg)`;
+            updatePitch(currentVoltage); 
+        });
+
+        const endDrag = (e) => {
+            if (activeDrag) {
+                activeDrag = false;
+                try { mainKnob.releasePointerCapture(e.pointerId); } catch(err){}
+                if(!isMacroRunning) releaseEnvelope();
+            }
+        };
+
+        document.addEventListener('pointerup', endDrag);
+        document.addEventListener('pointercancel', endDrag);
+        
+        updateKnobPosition(0);
+    </script>
+</body>
+</html>
