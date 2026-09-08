@@ -3,6 +3,8 @@
     RP-25 Radial Pitch Mapper (Tuning Edition)
     Created & Developed by Jose Velazquez MA
     Voltage & Wave (https://voltageandwave.co.uk/)
+    -- Patched: fixed key/knob pointer-state collision, added sine wave,
+       fine-tune (cents) control, and master volume control --
 -->
 <html lang="en">
 <head>
@@ -24,7 +26,7 @@
         .rack-bolt { width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #a39c8e 0%, #3a362f 80%); border: 1px solid #1a1815; box-shadow: inset 0 1px 1px rgba(255,255,255,0.6), 0 2px 4px rgba(0,0,0,0.3); position: absolute; }
         .bolt-tl { top: 12px; left: 12px; } .bolt-tr { top: 12px; right: 12px; } .bolt-bl { bottom: 12px; left: 12px; } .bolt-br { bottom: 12px; right: 12px; }
 
-        .crt-screen { background: #041004; border: 4px solid #2a2722; border-radius: 8px; box-shadow: inset 0 0 20px rgba(0, 255, 0, 0.25), inset 0 0 12px #000, 0 3px 6px rgba(0,0,0,0.4); position: relative; overflow: hidden; box-sizing: border-box; width: 100%; max-width: 320px; height: 80px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; }
+        .crt-screen { background: #041004; border: 4px solid #2a2722; border-radius: 8px; box-shadow: inset 0 0 20px rgba(0, 255, 0, 0.25), inset 0 0 12px #000, 0 3px 6px rgba(0,0,0,0.4); position: relative; overflow: hidden; box-sizing: border-box; width: 100%; max-width: 320px; height: 92px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; }
         .crt-screen::before { content: " "; position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03)); z-index: 5; background-size: 100% 3px, 6px 100%; pointer-events: none; }
         .crt-text { color: #0f0; font-family: monospace; font-size: 16px; font-weight: bold; text-shadow: 0 0 5px #0f0; z-index: 10; text-align: center; line-height: 1.4; }
 
@@ -37,7 +39,7 @@
         .knob { width: 100px; height: 100px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #2d3036 0%, #15171a 70%, #050608 100%); border: 3px solid #000; cursor: ns-resize; position: relative; z-index: 20; box-shadow: inset 0 2px 4px rgba(255,255,255,0.2), 0 8px 15px rgba(0,0,0,0.5); transform: rotate(-135deg); touch-action: none; }
         .knob::after { content: ''; position: absolute; top: 8px; left: 45px; width: 4px; height: 24px; background: #fff; border-radius: 2px; box-shadow: 0 0 4px rgba(255,255,255,0.9); }
 
-        .radial-key { position: absolute; width: 40px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.4); transform-origin: center; transition: all 0.1s ease; cursor: pointer; }
+        .radial-key { position: absolute; width: 40px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.4); transform-origin: center; transition: all 0.1s ease; cursor: pointer; touch-action: none; }
         
         .key-white { background: linear-gradient(180deg, #ffffff 0%, #d8d3c5 100%); color: #111; border: 2px solid #111; }
         .key-black { background: linear-gradient(180deg, #333 0%, #111 100%); color: #aaa; border: 2px solid #000; z-index: 5; }
@@ -46,6 +48,12 @@
         .active-key.key-black { background: #c83a2a; color: #fff; border-color: #fff; box-shadow: 0 0 15px #c83a2a, inset 0 0 5px rgba(255,255,255,0.5); transform: scale(1.1); z-index: 15; }
 
         .panel-outline { border: 1.5px solid #38342e; border-radius: 6px; background: rgba(0, 0, 0, 0.025); box-shadow: inset 0 1px 2px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.7); padding: 2rem; display: flex; flex-direction: column; align-items: center; }
+
+        .fine-row { display: flex; align-items: center; gap: 1px; background: rgba(56,52,46,0.1); padding: 4px; border-radius: 4px; border: 1px solid rgba(56,52,46,0.3); }
+
+        .vol-slider { -webkit-appearance: none; appearance: none; width: 120px; height: 4px; border-radius: 2px; background: #82796e; outline: none; }
+        .vol-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #191a1e; border: 2px solid #000; cursor: pointer; box-shadow: 0 2px 3px rgba(0,0,0,0.4); }
+        .vol-slider::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: #191a1e; border: 2px solid #000; cursor: pointer; }
 
     </style>
 </head>
@@ -67,6 +75,7 @@
                     <div class="crt-text">
                         <div id="dispNote">NOTE: --</div>
                         <div id="dispFreq" class="text-[12px] opacity-80 mt-1">FREQ: 0.00 Hz</div>
+                        <div id="dispFine" class="text-[10px] opacity-70 mt-1">FINE: +0&cent;</div>
                     </div>
                 </div>
 
@@ -78,6 +87,19 @@
                         <button id="btnOctDown" class="tactile-button px-2 py-0.5 rounded text-[12px] font-bold">-</button>
                         <div id="dispOct" class="text-[9px] font-bold text-[#5a544a] w-10 text-center">OCT 0</div>
                         <button id="btnOctUp" class="tactile-button px-2 py-0.5 rounded text-[12px] font-bold">+</button>
+                    </div>
+                </div>
+
+                <!-- FINE TUNE + VOLUME -->
+                <div class="flex gap-3 w-full max-w-[320px] justify-between items-center pt-3 pb-1">
+                    <div class="fine-row">
+                        <button id="btnFineDown" class="tactile-button px-2 py-0.5 rounded text-[12px] font-bold">-</button>
+                        <div class="text-[9px] font-bold text-[#5a544a] w-14 text-center">FINE ¢</div>
+                        <button id="btnFineUp" class="tactile-button px-2 py-0.5 rounded text-[12px] font-bold">+</button>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[9px] font-bold text-[#5a544a]">VOL</span>
+                        <input type="range" id="volSlider" class="vol-slider" min="0" max="1" step="0.01" value="0.5">
                     </div>
                 </div>
 
@@ -108,22 +130,28 @@
         const startAngle = -135; 
 
         // Audio & State
-        let audioCtx, osc, vcf, vca;
+        let audioCtx, osc, vcf, vca, masterGain;
         let currentNoteIndex = -1;
         let isHold = false;
-        let waveType = 'sawtooth';
+        let waveType = 'sawtooth'; // 'sawtooth' -> 'triangle' -> 'sine' -> ...
         let octaveOffset = 0; // 0 = C2 base
+        let fineCents = 0; // -50..+50 cents fine tune, applied on top of the selected note
+        let masterVolume = 0.5;
 
         const radialContainer = document.getElementById('radialContainer');
         const mainKnob = document.getElementById('mainKnob');
         const dispNote = document.getElementById('dispNote');
         const dispFreq = document.getElementById('dispFreq');
+        const dispFine = document.getElementById('dispFine');
         const dispOct = document.getElementById('dispOct');
         
         const btnHold = document.getElementById('btnHold');
         const btnWave = document.getElementById('btnWave');
         const btnOctDown = document.getElementById('btnOctDown');
         const btnOctUp = document.getElementById('btnOctUp');
+        const btnFineDown = document.getElementById('btnFineDown');
+        const btnFineUp = document.getElementById('btnFineUp');
+        const volSlider = document.getElementById('volSlider');
 
         const keys = [];
 
@@ -143,15 +171,25 @@
             keyEl.dataset.index = i;
             keyEl.style.transform = `translate(${x}px, ${y}px) rotate(${angleDeg}deg)`;
             
-            // Interaction for direct key clicks
+            // Direct key interaction: fully independent of the knob's drag state,
+            // so a finger drifting on tap can never be misread as a knob sweep
+            // (previously this borrowed the knob's activeDrag/startY globals,
+            // which could snap the note to the wrong pitch on touch devices).
             keyEl.addEventListener('pointerdown', async (e) => {
+                e.stopPropagation();
                 await initAudio();
-                const noteIndex = parseInt(e.currentTarget.dataset.index);
+                try { keyEl.setPointerCapture(e.pointerId); } catch (err) {}
+                const noteIndex = parseInt(e.currentTarget.dataset.index, 10);
                 updateKnobPosition(noteIndex);
                 triggerNote(noteIndex);
-                // Temporarily flag activeDrag so release logic fires on pointer up (if Hold is off)
-                activeDrag = true; 
             });
+
+            const releaseKey = (e) => {
+                try { keyEl.releasePointerCapture(e.pointerId); } catch (err) {}
+                if (!isHold) releaseNote();
+            };
+            keyEl.addEventListener('pointerup', releaseKey);
+            keyEl.addEventListener('pointercancel', releaseKey);
 
             radialContainer.appendChild(keyEl);
             keys.push(keyEl);
@@ -172,15 +210,18 @@
                 osc = audioCtx.createOscillator();
                 vcf = audioCtx.createBiquadFilter();
                 vca = audioCtx.createGain();
+                masterGain = audioCtx.createGain();
                 
                 osc.type = waveType;
                 vcf.type = 'lowpass';
                 vcf.Q.value = 1.5;
                 vca.gain.value = 0.0001;
+                masterGain.gain.value = masterVolume;
                 
                 osc.connect(vcf);
                 vcf.connect(vca);
-                vca.connect(audioCtx.destination);
+                vca.connect(masterGain);
+                masterGain.connect(audioCtx.destination);
                 
                 osc.start();
             }
@@ -191,14 +232,16 @@
             if (!audioCtx) return;
             const now = audioCtx.currentTime;
             
-            // Calculate actual pitch including octave shift
+            // Calculate actual pitch including octave shift and fine-tune cents
             const totalSemitones = noteIndex + (octaveOffset * 12);
-            const freq = 65.41 * Math.pow(2, totalSemitones / 12); // Base C2
-            
+            const freq = 65.41 * Math.pow(2, totalSemitones / 12) * Math.pow(2, fineCents / 1200); // Base C2
+
             osc.frequency.setTargetAtTime(freq, now, 0.01);
             
-            // Filter Envelope: Keep more open for Triangle, slightly closed for Saw to smooth it
-            const targetFilter = waveType === 'sawtooth' ? 4000 : 20000;
+            // Filter Envelope: brighter for Saw/Tri (harmonics help you hear beating),
+            // fully open for Sine so the pure fundamental isn't dulled
+            const filterByWave = { sawtooth: 4000, triangle: 8000, sine: 20000 };
+            const targetFilter = filterByWave[waveType] ?? 4000;
             vcf.frequency.cancelScheduledValues(now);
             vcf.frequency.setValueAtTime(vcf.frequency.value || 400, now);
             vcf.frequency.linearRampToValueAtTime(targetFilter, now + 0.02);
@@ -254,14 +297,12 @@
             }
         });
 
+        const waveCycle = ['sawtooth', 'triangle', 'sine'];
+        const waveLabels = { sawtooth: 'SAW', triangle: 'TRI', sine: 'SIN' };
         btnWave.addEventListener('click', () => {
-            if (waveType === 'sawtooth') {
-                waveType = 'triangle'; // Triangle is better than pure sine for tuning hardware (has odd harmonics)
-                btnWave.innerText = 'WAVE: TRI';
-            } else {
-                waveType = 'sawtooth';
-                btnWave.innerText = 'WAVE: SAW';
-            }
+            const nextIdx = (waveCycle.indexOf(waveType) + 1) % waveCycle.length;
+            waveType = waveCycle[nextIdx];
+            btnWave.innerText = `WAVE: ${waveLabels[waveType]}`;
             if (osc) osc.type = waveType;
             if (currentNoteIndex !== -1) triggerNote(currentNoteIndex); // refresh filter
         });
@@ -281,6 +322,33 @@
 
         btnOctDown.addEventListener('click', () => changeOctave(-1));
         btnOctUp.addEventListener('click', () => changeOctave(1));
+
+        function changeFine(deltaCents) {
+            fineCents = Math.max(-50, Math.min(50, fineCents + deltaCents));
+            dispFine.innerHTML = `FINE: ${fineCents > 0 ? '+' : ''}${fineCents}&cent;`;
+            if (currentNoteIndex !== -1) triggerNote(currentNoteIndex); // live re-pitch while droning/held
+        }
+
+        btnFineDown.addEventListener('click', () => changeFine(-1));
+        btnFineUp.addEventListener('click', () => changeFine(1));
+        // Long-press style fine adjust: hold the button to sweep faster
+        let fineHoldTimer = null;
+        function bindFineHold(btn, deltaCents) {
+            btn.addEventListener('pointerdown', () => {
+                fineHoldTimer = setInterval(() => changeFine(deltaCents), 90);
+            });
+            const stop = () => { if (fineHoldTimer) { clearInterval(fineHoldTimer); fineHoldTimer = null; } };
+            btn.addEventListener('pointerup', stop);
+            btn.addEventListener('pointerleave', stop);
+            btn.addEventListener('pointercancel', stop);
+        }
+        bindFineHold(btnFineDown, -1);
+        bindFineHold(btnFineUp, 1);
+
+        volSlider.addEventListener('input', (e) => {
+            masterVolume = parseFloat(e.target.value);
+            if (masterGain) masterGain.gain.setTargetAtTime(masterVolume, audioCtx.currentTime, 0.01);
+        });
 
         // Knob Drag Logic
         let activeDrag = false;
