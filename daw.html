@@ -131,7 +131,7 @@
 
                 <!-- RECORDING CONTROLS -->
                 <div class="flex gap-3 w-full max-w-[320px] justify-between items-center pt-3 pb-1 border-t border-[#38342e]/20">
-                    <button id="btnRecord" class="tactile-button px-3 py-1.5 rounded text-[10px] font-bold w-[75px]">&#9679; REC</button>
+                    <button id="btnRecord" class="tactile-button px-3 py-1.5 rounded text-[10px] font-bold w-[75px]">● REC</button>
                     <div id="recStatus" class="text-[9px] font-bold text-[#5a544a] flex-1 text-center">00:00</div>
                     <a id="btnDownload" href="#" class="tactile-button px-3 py-1.5 rounded text-[10px] font-bold w-[85px] text-center opacity-40 pointer-events-none">SAVE</a>
                 </div>
@@ -556,19 +556,31 @@
                         if (e.data && e.data.size > 0) recordedChunks.push(e.data);
                     };
 
-                    mediaRecorder.onstop = () => {
-                        const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
-                        const url = URL.createObjectURL(blob);
-                        btnDownload.href = url;
-                        btnDownload.download = `rp25-recording-${Date.now()}.webm`;
+                    mediaRecorder.onstop = async () => {
+                        recStatus.innerText = 'Encoding&hellip;';
+                        const rawBlob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+                        try {
+                            // Decode the captured audio and re-encode as PCM WAV, so the
+                            // download works in any DAW with no transcoding step needed.
+                            const arrayBuffer = await rawBlob.arrayBuffer();
+                            const decoded = await audioCtx.decodeAudioData(arrayBuffer);
+                            const wavBlob = audioBufferToWav(decoded);
+                            btnDownload.href = URL.createObjectURL(wavBlob);
+                            btnDownload.download = `rp25-recording-${Date.now()}.wav`;
+                        } catch (err) {
+                            // Fallback: offer the original compressed capture if WAV encoding fails
+                            btnDownload.href = URL.createObjectURL(rawBlob);
+                            btnDownload.download = `rp25-recording-${Date.now()}.webm`;
+                        }
                         btnDownload.classList.remove('opacity-40', 'pointer-events-none');
+                        recStatus.innerText = '00:00';
                     };
 
                     mediaRecorder.start();
                     isRecording = true;
                     recordStartTime = Date.now();
                     btnRecord.classList.add('active-toggle');
-                    btnRecord.innerText = '&#9632; STOP';
+                    btnRecord.innerText = '■ STOP';
                     btnDownload.classList.add('opacity-40', 'pointer-events-none');
 
                     recordTimerInterval = setInterval(() => {
@@ -582,9 +594,60 @@
                     isRecording = false;
                     clearInterval(recordTimerInterval);
                     btnRecord.classList.remove('active-toggle');
-                    btnRecord.innerText = '&#9679; REC';
+                    btnRecord.innerText = '● REC';
                 }
             });
+        }
+
+        // --- WAV encoding (16-bit PCM) ---
+        function audioBufferToWav(buffer) {
+            const numChannels = buffer.numberOfChannels;
+            const sampleRate = buffer.sampleRate;
+            const samples = numChannels === 2
+                ? interleaveChannels(buffer.getChannelData(0), buffer.getChannelData(1))
+                : buffer.getChannelData(0);
+
+            const bytesPerSample = 2;
+            const blockAlign = numChannels * bytesPerSample;
+            const dataSize = samples.length * bytesPerSample;
+            const arrayBuffer = new ArrayBuffer(44 + dataSize);
+            const view = new DataView(arrayBuffer);
+
+            writeAscii(view, 0, 'RIFF');
+            view.setUint32(4, 36 + dataSize, true);
+            writeAscii(view, 8, 'WAVE');
+            writeAscii(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);          // fmt chunk size
+            view.setUint16(20, 1, true);            // PCM format
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * blockAlign, true); // byte rate
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, 16, true);           // bit depth
+            writeAscii(view, 36, 'data');
+            view.setUint32(40, dataSize, true);
+
+            let offset = 44;
+            for (let i = 0; i < samples.length; i++, offset += 2) {
+                const s = Math.max(-1, Math.min(1, samples[i]));
+                view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+            }
+
+            return new Blob([view], { type: 'audio/wav' });
+        }
+
+        function interleaveChannels(left, right) {
+            const result = new Float32Array(left.length + right.length);
+            let idx = 0;
+            for (let i = 0; i < left.length; i++) {
+                result[idx++] = left[i];
+                result[idx++] = right[i];
+            }
+            return result;
+        }
+
+        function writeAscii(view, offset, text) {
+            for (let i = 0; i < text.length; i++) view.setUint8(offset + i, text.charCodeAt(i));
         }
 
         // --- MIDI output (Web MIDI API) ---
