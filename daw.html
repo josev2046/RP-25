@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <!-- 
-    RP-25 Radial Pitch Mapper (SQ-10 Continuous Voltage Edition)
+    RP-25 Radial Pitch Mapper (SQ-10 Continuous + Creative Edition)
     Created & Developed by Jose Velazquez MA
     Voltage & Wave (https://voltageandwave.co.uk/)
-    -- Patched: Authentic -5V to +5V continuous sweep (10 Octaves),
-       C-3 to C7 frequency tracking, and full semitone radial mapping --
--->
+    -- Patched: Added Ambient FX, Foley Macros, and Hidden Easter Egg Auto-Players --
+    -- Bugfix pass: macro run-ID system to stop easter-egg songs / FX macros from
+       contaminating each other when triggered mid-playback; interrupted macros now
+       also reset Hold/Delay/Reverb state cleanly. --
+    -- DAW pass: added local WAV recording and Web MIDI output, matching the
+       Standard Edition. -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -23,7 +26,9 @@
 
         .chassis { background: radial-gradient(circle at 50% 20%, #f0ebd8 0%, #e2dbc8 60%, #cebba8 100%); border-top: 3px solid #f7f4e9; border-bottom: 4px solid #82796e; padding: 32px; flex-grow: 1; position: relative; display: flex; flex-direction: column; align-items: center; box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.8), inset 0 -2px 5px rgba(0,0,0,0.3); }
 
-        .rack-bolt { width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #a39c8e 0%, #3a362f 80%); border: 1px solid #1a1815; box-shadow: inset 0 1px 1px rgba(255,255,255,0.6), 0 2px 4px rgba(0,0,0,0.3); position: absolute; }
+        /* Rack Bolts now double as secret buttons */
+        .rack-bolt { width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #a39c8e 0%, #3a362f 80%); border: 1px solid #1a1815; box-shadow: inset 0 1px 1px rgba(255,255,255,0.6), 0 2px 4px rgba(0,0,0,0.3); position: absolute; cursor: pointer; transition: transform 0.1s ease; }
+        .rack-bolt:active { transform: scale(0.85); box-shadow: inset 0 2px 4px rgba(0,0,0,0.6); }
         .bolt-tl { top: 12px; left: 12px; } .bolt-tr { top: 12px; right: 12px; } .bolt-bl { bottom: 12px; left: 12px; } .bolt-br { bottom: 12px; right: 12px; }
 
         .crt-screen { background: #041004; border: 4px solid #2a2722; border-radius: 8px; box-shadow: inset 0 0 20px rgba(0, 255, 0, 0.25), inset 0 0 12px #000, 0 3px 6px rgba(0,0,0,0.4); position: relative; overflow: hidden; box-sizing: border-box; width: 100%; max-width: 320px; height: 96px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; margin-bottom: 1rem; }
@@ -36,32 +41,11 @@
 
         .radial-container { position: relative; width: 340px; height: 340px; display: flex; align-items: center; justify-content: center; margin-top: 1rem; }
 
-        /* KORG SQ-10 STYLE FLUTED KNOB */
-        .knob { 
-            width: 100px; height: 100px; border-radius: 50%; 
-            background: repeating-conic-gradient(from 0deg, #0a0b0c 0deg 4deg, #22252a 4deg 8deg); 
-            border: 2px solid #000; cursor: ns-resize; position: relative; z-index: 30; 
-            box-shadow: 0 8px 15px rgba(0,0,0,0.6); 
-            transform: rotate(-135deg); touch-action: none; 
-        }
-        .knob::before {
-            content: ''; position: absolute;
-            top: 12px; left: 12px; right: 12px; bottom: 12px;
-            border-radius: 50%;
-            background: radial-gradient(circle at 35% 35%, #2d3036 0%, #15171a 70%, #050608 100%);
-            box-shadow: inset 0 2px 4px rgba(255,255,255,0.1), 0 3px 6px rgba(0,0,0,0.9);
-        }
-        .knob::after { 
-            content: ''; position: absolute; 
-            top: 2px; left: 47px; width: 6px; height: 35px; 
-            background: #fff; border-radius: 1px; 
-            box-shadow: 0 0 3px rgba(255,255,255,0.6);
-            z-index: 2;
-        }
+        .knob { width: 100px; height: 100px; border-radius: 50%; background: repeating-conic-gradient(from 0deg, #0a0b0c 0deg 4deg, #22252a 4deg 8deg); border: 2px solid #000; cursor: ns-resize; position: relative; z-index: 30; box-shadow: 0 8px 15px rgba(0,0,0,0.6); transform: rotate(-135deg); touch-action: none; transition: transform 0.05s ease-out; }
+        .knob::before { content: ''; position: absolute; top: 12px; left: 12px; right: 12px; bottom: 12px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #2d3036 0%, #15171a 70%, #050608 100%); box-shadow: inset 0 2px 4px rgba(255,255,255,0.1), 0 3px 6px rgba(0,0,0,0.9); }
+        .knob::after { content: ''; position: absolute; top: 2px; left: 47px; width: 6px; height: 35px; background: #fff; border-radius: 1px; box-shadow: 0 0 3px rgba(255,255,255,0.6); z-index: 2; }
 
-        /* RADIAL KEYS & TICKS */
         .radial-key { position: absolute; display: flex; align-items: center; justify-content: center; font-weight: bold; transform-origin: center; transition: all 0.1s ease; cursor: pointer; touch-action: none; }
-        
         .key-c { background: linear-gradient(180deg, #ffffff 0%, #d8d3c5 100%); color: #111; border: 2px solid #111; width: 34px; height: 20px; border-radius: 4px; z-index: 10; font-size: 9px; box-shadow: 0 4px 6px rgba(0,0,0,0.4); }
         .mini-white { background: #d8d3c5; border: 1px solid #111; width: 3px; height: 16px; border-radius: 1px; z-index: 8; }
         .mini-black { background: #111; border: 1px solid #000; width: 3px; height: 10px; border-radius: 1px; z-index: 5; }
@@ -69,12 +53,10 @@
         .active-key.key-c { background: #c83a2a; color: #fff; border-color: #fff; box-shadow: 0 0 15px #c83a2a, inset 0 0 5px rgba(255,255,255,0.5); transform: scale(1.1); z-index: 25; }
         .active-key.mini-white, .active-key.mini-black { background: #ff4444; border-color: #ffaaaa; box-shadow: 0 0 10px #ff4444; z-index: 25; }
 
-        .panel-outline { border: 1.5px solid #38342e; border-radius: 6px; background: rgba(0, 0, 0, 0.025); box-shadow: inset 0 1px 2px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.7); padding: 2rem; display: flex; flex-direction: column; align-items: center; }
+        .panel-outline { border: 1.5px solid #38342e; border-radius: 6px; background: rgba(0, 0, 0, 0.025); box-shadow: inset 0 1px 2px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.7); padding: 2rem; display: flex; flex-direction: column; align-items: center; margin-bottom: 1rem; }
         .fine-row { display: flex; align-items: center; gap: 1px; background: rgba(56,52,46,0.1); padding: 4px; border-radius: 4px; border: 1px solid rgba(56,52,46,0.3); }
-
         .vol-slider { -webkit-appearance: none; appearance: none; width: 120px; height: 4px; border-radius: 2px; background: #82796e; outline: none; }
         .vol-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #191a1e; border: 2px solid #000; cursor: pointer; box-shadow: 0 2px 3px rgba(0,0,0,0.4); }
-        .vol-slider::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: #191a1e; border: 2px solid #000; cursor: pointer; }
 
     </style>
 </head>
@@ -83,8 +65,10 @@
         <div class="wooden-ear wooden-ear-left"></div>
 
         <div class="chassis">
-            <div class="rack-bolt bolt-tl"></div><div class="rack-bolt bolt-tr"></div>
-            <div class="rack-bolt bolt-bl"></div><div class="rack-bolt bolt-br"></div>
+            <div class="rack-bolt bolt-tl" id="bolt-tl" title="Secret 1"></div>
+            <div class="rack-bolt bolt-tr" id="bolt-tr" title="Secret 2"></div>
+            <div class="rack-bolt bolt-bl" id="bolt-bl" title="Secret 3"></div>
+            <div class="rack-bolt bolt-br" id="bolt-br" title="Secret 4"></div>
             
             <div class="flex items-center justify-between w-full mb-4 px-2">
                 <div class="text-[10px] font-black text-[#1f1a14] tracking-widest border-b-2 border-[#38342e]/30 pb-1">VOLTAGE & WAVE • SQ-10 CONTINUOUS TUNER</div>
@@ -105,7 +89,6 @@
                     </div>
                 </div>
 
-                <!-- TUNING CONTROLS -->
                 <div class="flex gap-4 w-full max-w-[320px] justify-between items-center border-b border-[#38342e]/20 pb-4">
                     <button id="btnHold" class="tactile-button px-3 py-1.5 rounded text-[10px] font-bold w-[75px]">HOLD: OFF</button>
                     <button id="btnWave" class="tactile-button px-3 py-1.5 rounded text-[10px] font-bold w-[75px]">WAVE: SAW</button>
@@ -116,7 +99,6 @@
                     </div>
                 </div>
 
-                <!-- FINE TUNE + VOLUME -->
                 <div class="flex gap-3 w-full max-w-[320px] justify-between items-center pt-3 pb-1">
                     <div class="fine-row">
                         <button id="btnFineDown" class="tactile-button px-2 py-0.5 rounded text-[12px] font-bold">-</button>
@@ -144,22 +126,28 @@
                     </select>
                 </div>
 
-                <!-- RADIAL VOLTAGE MAP -->
                 <div class="radial-container" id="radialContainer">
                     <div class="knob" id="mainKnob"></div>
                 </div>
-                
-                <div class="mt-8 flex flex-col items-center gap-3 w-full">
-                    <span class="text-[9px] font-bold text-[#5a544a] text-center tracking-widest">
-                        DRAG KNOB FOR FULL ±5V ANALOG SWEEP
-                    </span>
-                    <div class="text-[9px] text-[#38342e] font-mono font-bold tracking-widest text-center w-full border-t border-[#38342e]/30 pt-3">
-                        &copy; JOSE VELAZQUEZ MA / <a href="https://voltageandwave.co.uk/" target="_blank" rel="noopener noreferrer" class="hover:text-[#c83a2a] underline transition-colors">VOLTAGE &amp; WAVE</a>
-                    </div>
+            </div>
+
+            <!-- CREATIVE FX & MACROS -->
+            <div class="w-full border-t border-[#38342e]/30 pt-4 flex flex-col items-center gap-3">
+                <span class="text-[9px] font-bold text-[#5a544a] tracking-widest mb-1">CREATIVE POTENTIAL / FX MACROS</span>
+                <div class="flex gap-2 flex-wrap justify-center w-full">
+                    <button id="btnDelay" class="tactile-button px-3 py-1.5 rounded text-[9px] font-bold tracking-wider">DELAY</button>
+                    <button id="btnReverb" class="tactile-button px-3 py-1.5 rounded text-[9px] font-bold tracking-wider">REVERB</button>
+                    <div class="border-l border-[#38342e]/30 h-[24px] mx-1"></div>
+                    <button id="btnTheremin" class="tactile-button px-3 py-1.5 rounded text-[9px] font-bold tracking-wider">THEREMIN</button>
+                    <button id="btnLaser" class="tactile-button px-3 py-1.5 rounded text-[9px] font-bold tracking-wider">LASER</button>
+                    <button id="btnRiser" class="tactile-button px-3 py-1.5 rounded text-[9px] font-bold tracking-wider">RISER</button>
+                </div>
+                <div class="text-[9px] text-[#38342e] font-mono font-bold tracking-widest text-center w-full mt-4">
+                    &copy; JOSE VELAZQUEZ MA / <a href="https://voltageandwave.co.uk/" target="_blank" rel="noopener noreferrer" class="hover:text-[#c83a2a] underline transition-colors">VOLTAGE &amp; WAVE</a>
                 </div>
             </div>
+            
         </div>
-        
         <div class="wooden-ear wooden-ear-right"></div>
     </div>
 
@@ -168,16 +156,26 @@
         const totalSemitones = 120; // 10 Octaves (-5V to +5V)
         const arcSweep = 270;
         const startAngle = -135; 
+        const V = (oct, semi) => oct + (semi/12); // Helper for 1V/Octave mappings
 
-        // Audio & State
         let audioCtx, osc, vcf, vca, masterGain, analyser;
+        let delayNode, feedbackGain, reverbNode, dryGain, delayOutGain, reverbOutGain;
+        
         let isHold = false;
         let waveType = 'sawtooth'; 
         let octaveOffset = 0; 
         let fineCents = 0; 
         let masterVolume = 0.5;
+        let isDelayActive = false;
+        let isReverbActive = false;
+        let isMacroRunning = false;
 
-        // Voltage Value: -5.0V to +5.0V
+        // Bugfix: every macro (song easter-eggs, laser, riser) now checks its own
+        // generation number against this counter. Starting a new macro bumps the
+        // counter, which invalidates every pending timeout/rAF callback from any
+        // previous macro instantly -- no more cross-contaminated notes.
+        let macroRunId = 0;
+
         let currentVoltage = -5.0;
 
         // Recording state
@@ -209,6 +207,13 @@
         const btnFineDown = document.getElementById('btnFineDown');
         const btnFineUp = document.getElementById('btnFineUp');
         const volSlider = document.getElementById('volSlider');
+        
+        const btnDelay = document.getElementById('btnDelay');
+        const btnReverb = document.getElementById('btnReverb');
+        const btnTheremin = document.getElementById('btnTheremin');
+        const btnLaser = document.getElementById('btnLaser');
+        const btnRiser = document.getElementById('btnRiser');
+
         const btnRecord = document.getElementById('btnRecord');
         const recStatus = document.getElementById('recStatus');
         const btnDownload = document.getElementById('btnDownload');
@@ -217,7 +222,21 @@
 
         const allKeys = [];
 
-        // Generate full 121-note dial (10 Octaves inclusive)
+        // Bugfix: central "stop whatever macro is running" helper. Bumps the run
+        // id (so any in-flight callbacks bail out) AND, if a macro was actually
+        // running, cleanly resets Hold/Delay/Reverb instead of leaving them
+        // stuck on from the interrupted macro.
+        function interruptMacro() {
+            macroRunId++;
+            if (isMacroRunning) {
+                isMacroRunning = false;
+                toggleHold(false);
+                toggleDelay(false);
+                toggleReverb(false);
+            }
+        }
+
+        // Generate 121 markers (-5V to +5V)
         for (let i = 0; i <= totalSemitones; i++) {
             const voltage = -5 + (i / 12);
             const angleDeg = startAngle + (i / totalSemitones) * arcSweep;
@@ -231,14 +250,14 @@
             const keyEl = document.createElement('div');
             
             if (isC) {
-                const r = 135; // Outer ring for C notes
+                const r = 135; 
                 const x = Math.cos(angleRad) * r;
                 const y = Math.sin(angleRad) * r;
                 keyEl.className = 'radial-key key-c';
                 keyEl.dataset.voltage = voltage;
                 keyEl.style.transform = `translate(${x}px, ${y}px) rotate(${angleDeg}deg)`;
             } else {
-                const r = isBlack ? 92 : 98; // Inner ring for semitone ticks
+                const r = isBlack ? 92 : 98; 
                 const x = Math.cos(angleRad) * r;
                 const y = Math.sin(angleRad) * r;
                 keyEl.className = `radial-key ${isBlack ? 'mini-black' : 'mini-white'}`;
@@ -248,6 +267,7 @@
             
             keyEl.addEventListener('pointerdown', async (e) => {
                 e.stopPropagation();
+                interruptMacro();
                 await initAudio();
                 try { keyEl.setPointerCapture(e.pointerId); } catch (err) {}
                 
@@ -257,6 +277,7 @@
             });
 
             const releaseKey = (e) => {
+                if(isMacroRunning) return;
                 try { keyEl.releasePointerCapture(e.pointerId); } catch (err) {}
                 if (!isHold) releaseEnvelope();
             };
@@ -278,9 +299,25 @@
         }
         updateKeyLabels(); 
 
+        function generateImpulseResponse(ctx) {
+            const sampleRate = ctx.sampleRate;
+            const length = sampleRate * 2.5; 
+            const impulse = ctx.createBuffer(2, length, sampleRate);
+            const left = impulse.getChannelData(0);
+            const right = impulse.getChannelData(1);
+            for (let i = 0; i < length; i++) {
+                const decay = Math.pow(1 - i / length, 3);
+                left[i] = (Math.random() * 2 - 1) * decay;
+                right[i] = (Math.random() * 2 - 1) * decay;
+            }
+            return impulse;
+        }
+
         async function initAudio() {
             if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+                
                 osc = audioCtx.createOscillator();
                 vcf = audioCtx.createBiquadFilter();
                 vca = audioCtx.createGain();
@@ -294,13 +331,43 @@
                 masterGain.gain.value = masterVolume;
                 analyser.fftSize = 512;
                 
+                dryGain = audioCtx.createGain();
+                dryGain.gain.value = 1.0;
+                
+                delayNode = audioCtx.createDelay(2.0);
+                delayNode.delayTime.value = 0.35; 
+                feedbackGain = audioCtx.createGain();
+                feedbackGain.gain.value = 0.5; 
+                delayOutGain = audioCtx.createGain();
+                delayOutGain.gain.value = 0; 
+                
+                reverbNode = audioCtx.createConvolver();
+                reverbNode.buffer = generateImpulseResponse(audioCtx);
+                reverbOutGain = audioCtx.createGain();
+                reverbOutGain.gain.value = 0; 
+
                 osc.connect(vcf);
                 vcf.connect(vca);
-                vca.connect(masterGain);
+                
+                vca.connect(dryGain);
+                vca.connect(delayNode);
+                vca.connect(reverbNode);
+
+                delayNode.connect(feedbackGain);
+                feedbackGain.connect(delayNode);
+                
+                delayNode.connect(delayOutGain);
+                reverbNode.connect(reverbOutGain);
+                
+                dryGain.connect(masterGain);
+                delayOutGain.connect(masterGain);
+                reverbOutGain.connect(masterGain);
+
                 masterGain.connect(analyser);
                 analyser.connect(audioCtx.destination);
 
-                // Tap the master output for recording, without affecting playback
+                // Tap the final mixed output (dry + delay + reverb) for recording,
+                // without affecting playback.
                 recordDestination = audioCtx.createMediaStreamDestination();
                 masterGain.connect(recordDestination);
                 
@@ -335,7 +402,6 @@
             for (let i = 0; i < bufferLength; i++) {
                 const val = dataArray[i] / 128.0;
                 const y = val * canvas.height / 2;
-
                 if (i === 0) ctx.moveTo(x, y);
                 else ctx.lineTo(x, y);
                 x += sliceWidth;
@@ -344,16 +410,14 @@
             ctx.stroke();
         }
 
-        // --- 1V/Octave Continuous Pitch Logic ---
-        function updatePitch(voltage) {
+        function updatePitch(voltage, glideTime = 0.01) {
             if (!audioCtx) return;
             const now = audioCtx.currentTime;
-            
             const semitonesFromC2 = voltage * 12;
             const totalSemitones = semitonesFromC2 + (octaveOffset * 12);
-            
             const freq = 65.41 * Math.pow(2, totalSemitones / 12) * Math.pow(2, fineCents / 1200); 
-            osc.frequency.setTargetAtTime(freq, now, 0.01);
+            
+            osc.frequency.setTargetAtTime(freq, now, glideTime);
 
             const nearestSemitone = Math.round(semitonesFromC2);
             const noteIndex = ((nearestSemitone % 12) + 12) % 12;
@@ -367,16 +431,13 @@
             dispNote.innerText = `NOTE: ${noteChar}${octave}${detuneStr}`;
             dispFreq.innerText = `FREQ: ${freq.toFixed(2)} Hz`;
 
-            // Calculate the absolute index in our 121-note array to highlight it
-            const absoluteNoteIndex = nearestSemitone + 60; // -5V * 12 = -60. So -60 is index 0.
-            
+            const absoluteNoteIndex = nearestSemitone + 60; 
             allKeys.forEach((k, idx) => {
                 if (idx === absoluteNoteIndex && detuneCents === 0) k.classList.add('active-key');
                 else k.classList.remove('active-key');
             });
 
-            // Keep an already-sounding MIDI note tracking the continuous sweep:
-            // re-trigger on a new nearest semitone, pitch-bend for anything in between.
+            // Re-trigger on a new nearest semitone, pitch-bend for anything in between.
             if (midiEnabled && activeMidiNote !== null) {
                 const { midiNote, cents } = getMidiPitchInfo(voltage);
                 if (midiNote !== activeMidiNote) {
@@ -391,8 +452,7 @@
         function triggerEnvelope() {
             if (!audioCtx) return;
             const now = audioCtx.currentTime;
-
-            const filterByWave = { sawtooth: 4000, triangle: 8000, sine: 20000 };
+            const filterByWave = { sawtooth: 4000, triangle: 8000, sine: 20000, square: 8000 };
             const targetFilter = filterByWave[waveType] ?? 4000;
             vcf.frequency.cancelScheduledValues(now);
             vcf.frequency.setValueAtTime(vcf.frequency.value || 400, now);
@@ -411,8 +471,8 @@
             }
         }
 
-        function releaseEnvelope() {
-            if (isHold || !audioCtx || !vca) return;
+        function releaseEnvelope(force = false) {
+            if ((isHold && !force) || !audioCtx || !vca) return;
             const now = audioCtx.currentTime;
             vca.gain.cancelScheduledValues(now);
             vca.gain.setValueAtTime(vca.gain.value, now);
@@ -426,36 +486,65 @@
             }
         }
 
-        function updateKnobPosition(voltage) {
+        function updateKnobPosition(voltage, glide = 0.01) {
             currentVoltage = voltage;
             const angle = startAngle + ((currentVoltage + 5) / 10) * arcSweep;
             mainKnob.style.transform = `rotate(${angle}deg)`;
-            updatePitch(currentVoltage);
+            updatePitch(currentVoltage, glide);
         }
 
-        // --- UI Listeners ---
-        btnHold.addEventListener('click', () => {
-            isHold = !isHold;
+        function toggleHold(state) {
+            isHold = state;
             if (isHold) {
                 btnHold.classList.add('active-toggle');
                 btnHold.innerText = 'HOLD: ON';
             } else {
                 btnHold.classList.remove('active-toggle');
                 btnHold.innerText = 'HOLD: OFF';
-                if (!activeDrag) releaseEnvelope();
+                if (!activeDrag && !isMacroRunning) releaseEnvelope();
             }
-        });
+        }
+        btnHold.addEventListener('click', () => toggleHold(!isHold));
 
-        const waveCycle = ['sawtooth', 'triangle', 'sine'];
-        const waveLabels = { sawtooth: 'SAW', triangle: 'TRI', sine: 'SIN' };
-        btnWave.addEventListener('click', () => {
-            const nextIdx = (waveCycle.indexOf(waveType) + 1) % waveCycle.length;
-            waveType = waveCycle[nextIdx];
+        const waveCycle = ['sawtooth', 'triangle', 'sine', 'square'];
+        const waveLabels = { sawtooth: 'SAW', triangle: 'TRI', sine: 'SIN', square: 'SQR' };
+        function updateWaveUI() {
             btnWave.innerText = `WAVE: ${waveLabels[waveType]}`;
             if (osc) osc.type = waveType;
+        }
+        btnWave.addEventListener('click', () => {
+            interruptMacro();
+            const nextIdx = (waveCycle.indexOf(waveType) + 1) % waveCycle.length;
+            waveType = waveCycle[nextIdx];
+            updateWaveUI();
             if (isHold || activeDrag) triggerEnvelope(); 
         });
 
+        function toggleDelay(state) {
+            isDelayActive = state;
+            if (isDelayActive) {
+                btnDelay.classList.add('active-toggle');
+                if(delayOutGain) delayOutGain.gain.setTargetAtTime(0.6, audioCtx.currentTime, 0.1);
+            } else {
+                btnDelay.classList.remove('active-toggle');
+                if(delayOutGain) delayOutGain.gain.setTargetAtTime(0.0, audioCtx.currentTime, 0.1);
+            }
+        }
+        btnDelay.addEventListener('click', async () => { await initAudio(); toggleDelay(!isDelayActive); });
+
+        function toggleReverb(state) {
+            isReverbActive = state;
+            if (isReverbActive) {
+                btnReverb.classList.add('active-toggle');
+                if(reverbOutGain) reverbOutGain.gain.setTargetAtTime(0.8, audioCtx.currentTime, 0.1);
+            } else {
+                btnReverb.classList.remove('active-toggle');
+                if(reverbOutGain) reverbOutGain.gain.setTargetAtTime(0.0, audioCtx.currentTime, 0.1);
+            }
+        }
+        btnReverb.addEventListener('click', async () => { await initAudio(); toggleReverb(!isReverbActive); });
+
+        // --- Hardware Tuning Logic ---
         function changeOctave(dir) {
             octaveOffset += dir;
             octaveOffset = Math.max(-2, Math.min(3, octaveOffset)); 
@@ -476,16 +565,11 @@
         
         let fineHoldTimer = null;
         function bindFineHold(btn, deltaCents) {
-            btn.addEventListener('pointerdown', () => {
-                fineHoldTimer = setInterval(() => changeFine(deltaCents), 90);
-            });
+            btn.addEventListener('pointerdown', () => { fineHoldTimer = setInterval(() => changeFine(deltaCents), 90); });
             const stop = () => { if (fineHoldTimer) { clearInterval(fineHoldTimer); fineHoldTimer = null; } };
-            btn.addEventListener('pointerup', stop);
-            btn.addEventListener('pointerleave', stop);
-            btn.addEventListener('pointercancel', stop);
+            btn.addEventListener('pointerup', stop); btn.addEventListener('pointerleave', stop); btn.addEventListener('pointercancel', stop);
         }
-        bindFineHold(btnFineDown, -1);
-        bindFineHold(btnFineUp, 1);
+        bindFineHold(btnFineDown, -1); bindFineHold(btnFineUp, 1);
 
         volSlider.addEventListener('input', (e) => {
             masterVolume = parseFloat(e.target.value);
@@ -497,6 +581,7 @@
         let startY = 0;
 
         mainKnob.addEventListener('pointerdown', async (e) => {
+            interruptMacro();
             await initAudio();
             activeDrag = true;
             mainKnob.setPointerCapture(e.pointerId);
@@ -507,17 +592,14 @@
         });
 
         document.addEventListener('pointermove', (e) => {
-            if (!activeDrag) return;
+            if (!activeDrag || isMacroRunning) return;
             
             const deltaY = startY - e.clientY;
             startY = e.clientY;
             
-            // Adjust voltage smoothly (0.01V per pixel drag)
             currentVoltage = Math.max(-5.0, Math.min(5.0, currentVoltage + (deltaY * 0.015)));
-            
             const angle = startAngle + ((currentVoltage + 5) / 10) * arcSweep;
             mainKnob.style.transform = `rotate(${angle}deg)`;
-
             updatePitch(currentVoltage); 
         });
 
@@ -525,14 +607,198 @@
             if (activeDrag) {
                 activeDrag = false;
                 try { mainKnob.releasePointerCapture(e.pointerId); } catch(err){}
-                releaseEnvelope();
+                if(!isMacroRunning) releaseEnvelope();
             }
         };
 
         document.addEventListener('pointerup', endDrag);
         document.addEventListener('pointercancel', endDrag);
 
-        // --- Recording to a local file (MediaRecorder) ---
+        // --- Unified Macro Player Engine ---
+        function playMelodyMacro(wave, melodyData) {
+            // Bugfix: capture this invocation's own id. Every deferred callback
+            // below checks it against the live macroRunId before doing anything,
+            // so a newer macro (or a manual key/knob interrupt) instantly and
+            // completely silences this one -- no leftover notes.
+            const myRunId = ++macroRunId;
+            if (isMacroRunning) {
+                isMacroRunning = false;
+                toggleHold(false);
+                toggleDelay(false);
+                toggleReverb(false);
+            }
+            releaseEnvelope(true); 
+            
+            setTimeout(async () => {
+                if (myRunId !== macroRunId) return; // superseded before we even started
+                await initAudio();
+                isMacroRunning = true;
+                waveType = wave; updateWaveUI();
+                toggleDelay(true); toggleReverb(true);
+                toggleHold(true);
+
+                let i = 0;
+                function playNext() {
+                    if (myRunId !== macroRunId) return; // superseded mid-song
+                    if (i >= melodyData.length) {
+                        toggleHold(false);
+                        isMacroRunning = false;
+                        return;
+                    }
+                    const note = melodyData[i];
+                    if (note.v !== null) {
+                        const glide = wave === 'sine' ? 0.05 : 0.01; 
+                        updateKnobPosition(note.v, glide);
+                        triggerEnvelope();
+                        
+                        const releaseTime = note.dur > 150 ? note.dur - 50 : note.dur - 10;
+                        setTimeout(() => {
+                            if (myRunId === macroRunId) releaseEnvelope(true);
+                        }, releaseTime);
+                    } else {
+                        releaseEnvelope(true);
+                    }
+                    setTimeout(() => {
+                        i++;
+                        playNext();
+                    }, note.dur);
+                }
+                playNext();
+            }, 100);
+        }
+
+        // --- Foley Macros ---
+        btnTheremin.addEventListener('click', async () => {
+            macroRunId++; // cancels any running song/laser/riser macro
+            await initAudio();
+            isMacroRunning = false; 
+            waveType = 'sine'; updateWaveUI();
+            toggleDelay(true); toggleReverb(true);
+            toggleHold(true);
+            updateKnobPosition(0);
+            triggerEnvelope();
+        });
+
+        btnLaser.addEventListener('click', async () => {
+            const myRunId = ++macroRunId; // cancels any other running macro
+            await initAudio();
+            isMacroRunning = true;
+            waveType = 'sawtooth'; updateWaveUI();
+            toggleHold(true); toggleDelay(true);
+            
+            let v = 4.0;
+            updateKnobPosition(v, 0.01);
+            triggerEnvelope();
+            
+            function dropStep() {
+                if(myRunId !== macroRunId) return; 
+                v -= 0.3; 
+                if(v <= -5.0) {
+                    v = -5.0; updateKnobPosition(v, 0.05);
+                    toggleHold(false); isMacroRunning = false;
+                } else {
+                    updateKnobPosition(v, 0.05); requestAnimationFrame(dropStep);
+                }
+            }
+            setTimeout(() => requestAnimationFrame(dropStep), 50);
+        });
+
+        btnRiser.addEventListener('click', async () => {
+            const myRunId = ++macroRunId; // cancels any other running macro
+            await initAudio();
+            isMacroRunning = true;
+            waveType = 'sawtooth'; updateWaveUI();
+            toggleDelay(true); toggleReverb(true); toggleHold(true);
+            
+            let v = -4.0;
+            updateKnobPosition(v, 0.01);
+            triggerEnvelope();
+            
+            function riseStep() {
+                if(myRunId !== macroRunId) return; 
+                v += 0.012; 
+                if(v >= 4.0) {
+                    v = 4.0; updateKnobPosition(v, 0.1);
+                    toggleHold(false); isMacroRunning = false;
+                } else {
+                    updateKnobPosition(v, 0.1); requestAnimationFrame(riseStep);
+                }
+            }
+            requestAnimationFrame(riseStep);
+        });
+
+        // --- Easter Egg Song Macros (Attached to Rack Bolts) ---
+        document.getElementById('bolt-tl').addEventListener('click', () => {
+            // Sweet Dreams
+            const S = [
+                { v: V(2, 0), dur: 200 }, { v: V(2, 0), dur: 200 }, { v: V(2, 3), dur: 200 }, { v: V(2, 0), dur: 200 },
+                { v: V(2, 5), dur: 200 }, { v: V(2, 0), dur: 200 }, { v: V(2, 3), dur: 200 }, { v: V(2, 0), dur: 200 },
+                { v: V(1, 8), dur: 200 }, { v: V(1, 8), dur: 200 }, { v: V(1, 8), dur: 200 }, { v: V(1, 8), dur: 200 },
+                { v: V(1, 7), dur: 200 }, { v: V(1, 7), dur: 200 }, { v: V(1, 7), dur: 200 }, { v: V(1, 7), dur: 200 }
+            ];
+            const melody = [...S, ...S, ...S, ...S];
+            playMelodyMacro('sawtooth', melody); 
+        });
+
+        document.getElementById('bolt-tr').addEventListener('click', () => {
+            // Contact (Close Encounters)
+            const melody = [
+                { v: V(2, 2), dur: 600 },  { v: null, dur: 100 },
+                { v: V(2, 4), dur: 600 },  { v: null, dur: 100 },
+                { v: V(2, 0), dur: 600 },  { v: null, dur: 100 },
+                { v: V(1, 0), dur: 600 },  { v: null, dur: 100 },
+                { v: V(1, 7), dur: 1500 }
+            ];
+            playMelodyMacro('sine', melody); 
+        });
+
+        document.getElementById('bolt-bl').addEventListener('click', () => {
+            // Paint It Black
+            const melody = [
+                { v: V(2, 4), dur: 400 }, { v: V(2, 6), dur: 400 }, { v: V(2, 7), dur: 400 }, { v: V(2, 9), dur: 400 },
+                { v: V(2, 7), dur: 400 }, { v: V(2, 6), dur: 400 }, { v: V(2, 4), dur: 400 }, { v: null, dur: 100 },
+                { v: V(2, 3), dur: 400 }, { v: V(2, 4), dur: 400 }, { v: V(2, 6), dur: 800 }, { v: null, dur: 400 },
+
+                { v: V(2, 4), dur: 400 }, { v: V(2, 6), dur: 400 }, { v: V(2, 7), dur: 400 }, { v: V(2, 9), dur: 400 },
+                { v: V(2, 7), dur: 400 }, { v: V(2, 6), dur: 400 }, { v: V(2, 4), dur: 400 }, { v: null, dur: 100 },
+                { v: V(2, 3), dur: 400 }, { v: V(2, 4), dur: 400 }, { v: V(2, 6), dur: 800 }, { v: null, dur: 400 },
+
+                { v: V(1, 11), dur: 300 }, { v: V(2, 4), dur: 400 }, { v: V(2, 4), dur: 400 }, { v: null, dur: 200 },
+                { v: V(1, 11), dur: 300 }, { v: V(2, 4), dur: 400 }, { v: V(2, 4), dur: 400 }, { v: null, dur: 200 },
+                { v: V(2, 4), dur: 300 }, { v: V(2, 6), dur: 300 }, { v: V(2, 7), dur: 300 }, { v: V(2, 9), dur: 300 },
+                { v: V(2, 7), dur: 300 }, { v: V(2, 6), dur: 600 }, { v: null, dur: 400 },
+
+                { v: V(1, 11), dur: 300 }, { v: V(2, 4), dur: 400 }, { v: V(2, 4), dur: 400 }, { v: null, dur: 200 },
+                { v: V(1, 11), dur: 300 }, { v: V(2, 4), dur: 400 }, { v: V(2, 4), dur: 400 }, { v: null, dur: 200 },
+                { v: V(2, 4), dur: 300 }, { v: V(2, 6), dur: 300 }, { v: V(2, 7), dur: 300 }, { v: V(2, 9), dur: 300 },
+                { v: V(2, 7), dur: 300 }, { v: V(2, 6), dur: 800 }, { v: null, dur: 400 }
+            ];
+            playMelodyMacro('sawtooth', melody); 
+        });
+
+        document.getElementById('bolt-br').addEventListener('click', () => {
+            // Yesterday
+            const melody = [
+                { v: V(2, 7), dur: 400 },  { v: V(2, 5), dur: 400 },  { v: V(2, 5), dur: 1200 }, { v: null,    dur: 300 },  
+                { v: V(2, 9), dur: 300 },  { v: V(2, 11),dur: 300 },  { v: V(3, 1), dur: 300 },  { v: V(3, 2), dur: 300 },  
+                { v: V(3, 4), dur: 300 },  { v: V(3, 5), dur: 300 },  { v: V(3, 4), dur: 300 },  { v: V(3, 2), dur: 300 },  
+                { v: V(3, 2), dur: 1200 }, { v: null,    dur: 300 },  { v: V(3, 2), dur: 300 },  { v: V(3, 0), dur: 300 },  
+                { v: V(2, 10),dur: 300 },  { v: V(2, 9), dur: 300 },  { v: V(2, 7), dur: 300 },  { v: V(2, 10),dur: 300 },  
+                { v: V(2, 9), dur: 300 },  { v: V(2, 9), dur: 900 },  { v: null,    dur: 200 },  { v: V(2, 7), dur: 300 },  
+                { v: V(2, 5), dur: 300 },  { v: V(2, 9), dur: 300 },  { v: V(2, 7), dur: 300 },  { v: V(2, 2), dur: 300 },  
+                { v: V(2, 5), dur: 300 },  { v: V(2, 9), dur: 300 },  { v: V(2, 9), dur: 1200 }, { v: null,    dur: 500 },
+                
+                { v: V(2, 9), dur: 400 },  { v: V(2, 9), dur: 400 },  { v: V(3, 2), dur: 300 },  { v: V(3, 4), dur: 300 },  
+                { v: V(3, 5), dur: 400 },  { v: V(3, 4), dur: 400 },  { v: V(3, 2), dur: 300 },  { v: V(3, 4), dur: 300 },  
+                { v: V(3, 2), dur: 600 },  { v: V(3, 0), dur: 300 },  { v: V(2, 9), dur: 600 },  { v: null,    dur: 400 },
+                { v: V(2, 9), dur: 400 },  { v: V(2, 9), dur: 400 },  { v: V(3, 2), dur: 300 },  { v: V(3, 4), dur: 300 },  
+                { v: V(3, 5), dur: 400 },  { v: V(3, 4), dur: 400 },  { v: V(3, 2), dur: 300 },  { v: V(3, 4), dur: 300 },  
+                { v: V(3, 2), dur: 600 },  { v: V(3, 0), dur: 300 },  { v: V(2, 9), dur: 1200 }   
+            ];
+            playMelodyMacro('triangle', melody);
+        });
+        
+        // --- Recording to a local WAV file (MediaRecorder + re-encode) ---
         if (typeof MediaRecorder === 'undefined') {
             btnRecord.disabled = true;
             btnRecord.innerText = 'REC N/A';
@@ -599,7 +865,6 @@
             });
         }
 
-        // --- WAV encoding (16-bit PCM) ---
         function audioBufferToWav(buffer) {
             const numChannels = buffer.numberOfChannels;
             const sampleRate = buffer.sampleRate;
@@ -617,13 +882,13 @@
             view.setUint32(4, 36 + dataSize, true);
             writeAscii(view, 8, 'WAVE');
             writeAscii(view, 12, 'fmt ');
-            view.setUint32(16, 16, true);          // fmt chunk size
-            view.setUint16(20, 1, true);            // PCM format
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
             view.setUint16(22, numChannels, true);
             view.setUint32(24, sampleRate, true);
-            view.setUint32(28, sampleRate * blockAlign, true); // byte rate
+            view.setUint32(28, sampleRate * blockAlign, true);
             view.setUint16(32, blockAlign, true);
-            view.setUint16(34, 16, true);           // bit depth
+            view.setUint16(34, 16, true);
             writeAscii(view, 36, 'data');
             view.setUint32(40, dataSize, true);
 
@@ -749,8 +1014,7 @@
             }
         }
         initMidi();
-
-        // Initialize dial position visually before audio interaction
+        
         updateKnobPosition(0);
     </script>
 </body>
