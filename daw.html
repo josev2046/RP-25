@@ -566,11 +566,11 @@
                             const decoded = await audioCtx.decodeAudioData(arrayBuffer);
                             const wavBlob = audioBufferToWav(decoded);
                             btnDownload.href = URL.createObjectURL(wavBlob);
-                            btnDownload.download = `rp25-recording-${Date.now()}.wav`;
+                            btnDownload.download = recordingFilename('wav');
                         } catch (err) {
                             // Fallback: offer the original compressed capture if WAV encoding fails
                             btnDownload.href = URL.createObjectURL(rawBlob);
-                            btnDownload.download = `rp25-recording-${Date.now()}.webm`;
+                            btnDownload.download = recordingFilename('webm');
                         }
                         btnDownload.classList.remove('opacity-40', 'pointer-events-none');
                         recStatus.innerText = '00:00';
@@ -648,6 +648,14 @@
 
         function writeAscii(view, offset, text) {
             for (let i = 0; i < text.length; i++) view.setUint8(offset + i, text.charCodeAt(i));
+        }
+
+        function recordingFilename(ext) {
+            const d = new Date();
+            const pad = (n) => String(n).padStart(2, '0');
+            const stamp = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
+                          `_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
+            return `rp25-recording-${stamp}.${ext}`;
         }
 
         // --- MIDI output (Web MIDI API) ---
